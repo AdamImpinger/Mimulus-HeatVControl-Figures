@@ -1,0 +1,613 @@
+---
+title: "Cleaned-labeled-FinalProject"
+author: "Adam Akins"
+date: "2026-04-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+#libraries
+
+library("pheatmap")
+library("RColorBrewer")
+library("gprofiler2")
+library(tidyverse)
+library(edgeR)
+library("clusterProfiler")
+library("VennDiagram") 
+library("edgeR")
+library("clusterProfiler")
+library("ggplot2")
+library("viridis")
+library(stringr)
+library(gt)
+library(scales)
+
+```
+
+```{r}
+#Reading raw files
+Mimulus_Sample_Info <- read_csv("Mimulus_Sample_Info.csv")
+mim_table <- read_table("counts3.out", col_names = TRUE)
+subset_mimulus_sampleinfo <- Mimulus_Sample_Info |> filter(Tissue != "Bu") 
+Cleaned_Mimulus_Sample_Info_try2 <-read_csv("Cleaned_Mimulus_Sample_Info_try2.csv")
+mimulus.out.treatmentid <- subset_mimulus_sampleinfo |> join_by()
+#write.csv(subset_mimulus_sampleinfo, file  ="Cleaned_Mimulus_Sample_info")
+```
+
+```{r}
+###reordering dge.subsets and testDGE — Adam###
+mimData <- mim_table[,2:dim(mim_table)[2]]
+mimAnnotation <- read.csv("Mimgutt_annotations.csv", header = T)
+mimGroups <- Cleaned_Mimulus_Sample_Info_try2$Group
+
+testDGE <- DGEList(counts=mimData, group =factor(mimGroups), genes = mimAnnotation)
+dge.subset_anth <- testDGE[,which(testDGE$samples$group == "An_F1_C" | testDGE$samples$group == "An_F1_H")]
+dge.subset_anth$samples$group[6] <- factor("An_F1_C")
+dge.subset_anth$samples$group[4] <- factor("An_F1_H")
+dge.subset_anth$samples$group[3] <- factor("An_F1_H")
+dge.subset_anth$samples$group[8]<- factor("An_F1_C")
+dge.subset_leaf <- testDGE[,which(testDGE$samples$group == "Le_F1_C" | testDGE$samples$group == "Le_F1_H")]
+dge.subset_leaf$samples$group[4] <- factor("Le_F1_H")
+dge.subset_leaf$samples$group[7] <- factor("Le_F1_C")
+dge.subset_ovary <- testDGE[,which(testDGE$samples$group == "Ov_F1_C" | testDGE$samples$group == "Ov_F1_H")]
+dge.subset_ovary$samples$group[5] <- factor("Ov_F1_C")
+dge.subset_ovary$samples$group[2] <- factor("Ov_F1_H")
+
+#cleaning overall testDGE
+testDGE$samples$group[5] <- factor("Ov_F1_H")
+testDGE$samples$group[7] <- factor("An_F1_H")
+testDGE$samples$group[10] <- factor("An_F1_H")
+testDGE$samples$group[12] <- factor("Le_F1_H")
+testDGE$samples$group[14] <- factor("Ov_F1_C")
+testDGE$samples$group[16] <- factor("An_F1_C")
+testDGE$samples$group[22] <- factor("An_F1_C")
+testDGE$samples$group[21] <- factor("Le_F1_C")
+
+```
+
+
+```{r}
+###Apply + keep step + colsums###
+apply(testDGE$counts, 2, sum)
+apply(dge.subset_anth$counts, 2, sum)
+apply(dge.subset_leaf$counts, 2, sum)
+apply(dge.subset_ovary$counts, 2, sum)
+keep <- rowSums(cpm(testDGE)> 20) >= 2
+keep.anth <- rowSums(cpm(dge.subset_anth)> 20) >= 2
+keep.leaf <- rowSums(cpm(dge.subset_leaf)> 20) >= 2
+keep.ovary <- rowSums(cpm(dge.subset_ovary)> 20) >= 2
+testDGE <- testDGE[keep,]
+dge.subset_anth <- dge.subset_anth[keep.anth,]
+dge.subset_leaf <- dge.subset_leaf[keep.leaf,]
+dge.subset_ovary <- dge.subset_ovary[keep.ovary,]
+testDGE$samples$lib.size <- colSums(testDGE$counts)
+dge.subset_anth$samples$lib.size <- colSums(dge.subset_anth$counts)
+dge.subset_leaf$samples$lib.size <- colSums(dge.subset_leaf$counts)
+dge.subset_ovary$samples$lib.size <- colSums(dge.subset_ovary$counts)
+```
+
+```{r}
+###Bar plots###
+barplot(testDGE$samples$lib.size*1e-6, ylab="Library size (millions)",names=rownames (testDGE$samples))
+```
+```{r}
+###calc norm factors ###
+testDGE <-  calcNormFactors(testDGE)
+dge.subset_anth <- calcNormFactors(dge.subset_anth)
+dge.subset_leaf<- calcNormFactors(dge.subset_leaf)
+dge.subset_ovary <- calcNormFactors(dge.subset_ovary)
+```
+
+```{r}
+### mds plots — Ren###
+plotMDS(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), label =testDGE$samples$group, dim.plot = c(1,3))
+```
+
+```{r}
+###Ren###
+plotMDS(dge.subset_anth, method="bcv", col=as.numeric(dge.subset_anth$samples$group), label =dge.subset_anth$samples$group, dim.plot = c(1,2))
+
+```
+```{r}
+
+plotMDS(dge.subset_leaf, method="bcv", col=as.numeric(dge.subset_leaf$samples$group), label =dge.subset_leaf$samples$group, dim.plot = c(1,2))
+
+
+```
+```{r}
+###Ren###
+plotMDS(dge.subset_ovary, method="bcv", col=as.numeric(dge.subset_ovary$samples$group), label =dge.subset_ovary$samples$group, dim.plot = c(1,2))
+```
+
+```{r}
+###Adam###
+#Building desgin
+design <-  model.matrix(~0+group, data = testDGE$samples)
+design.anth <- model.matrix(~0+group, data = dge.subset_anth$samples)
+colnames(design.anth) <- levels(dge.subset_anth$samples$group)
+
+design.leaf <- model.matrix(~0+group, data=dge.subset_leaf$samples)
+colnames(design.leaf) <- levels(dge.subset_leaf$samples$group)
+
+design.ovary <- model.matrix(~0+group, data=dge.subset_ovary$samples)
+colnames(design.ovary) <- levels(dge.subset_ovary$samples$group)
+
+###estimate dispersion
+dge.subset_anth<- estimateDisp(dge.subset_anth, design.anth)
+dge.subset_leaf<- estimateDisp(dge.subset_leaf, design.leaf)
+dge.subset_ovary<- estimateDisp(dge.subset_ovary, design.ovary)
+testDGE <- estimateDisp(testDGE,design)
+
+testDGE
+```
+
+```{r}
+### creating dge alias to run exact test ###
+etTestDGE <- testDGE
+etTestDGE$samples$condition <- ifelse(grepl("_H$", etTestDGE$samples$group), "H", "C")
+etTestDGE$samples$condition <- factor(etTestDGE$samples$condition)
+etTestDGE <- calcNormFactors(etTestDGE)
+etTestDGE <- estimateDisp(etTestDGE)
+etTestDGE$samples$group <- factor(etTestDGE$samples$condition)
+et <- exactTest(etTestDGE, pair = c("C", "H"))
+results <- topTags(et, n = Inf)$table
+```
+
+```{r}
+###et for the rest of tissue groups and isolating/filtering for top tags###
+et.anth.hvc <- exactTest(dge.subset_anth, pair = c("An_F1_C","An_F1_H"))
+et.leaf.hvc <- exactTest(dge.subset_leaf, pair = c("Le_F1_C", "Le_F1_H"))
+et.ovary.hvc <- exactTest(dge.subset_ovary, pair = c ("Ov_F1_C", "Ov_F1_H"))
+all.DGE <- topTags(et, n=nrow(et$table))$table
+tbl.anth_hvc <- topTags(et.anth.hvc, n=nrow(et.anth.hvc$table))$table
+tbl.leaf_hvc <- topTags(et.leaf.hvc,n=nrow(et.leaf.hvc))$table
+tbl.ovary_hvc <- topTags(et.ovary.hvc, n=nrow(et.ovary.hvc))$table
+
+#final tables of all differentially expressed genes
+is.de.leaf_hvc <-  decideTests.DGEExact(et.leaf.hvc,p=0.05)
+is.de.anth_hvc <-  decideTests.DGEExact(et.anth.hvc,p=0.05)
+is.de.ovary_hvc <- decideTests.DGEExact(et.ovary.hvc,p=0.05)
+
+```
+
+```{r}
+##pheat map for leaves — Ren
+log.leaf <- cpm(dge.subset_leaf, log = TRUE, prior.count = 2)
+is.leaf.logcompHvC <- log.leaf[is.de.leaf_hvc != 0, ]
+
+view(is.leaf.logcompHvC)
+pheatmap(is.leaf.logcompHvC, cluster_rows = TRUE, cutree_rows = 4)
+pheatmap(is.leaf.logcompHvC, cluster_rows = TRUE, cutree_rows = 4, scale ="row")
+
+```
+```{r}
+###ovary heat maps - Ren###
+log.ovary <- cpm(dge.subset_ovary, log = TRUE, prior.count = 2)
+is.ovary.logcompHvC <- log.ovary[is.de.ovary_hvc != 0, ]
+
+
+pheatmap(is.ovary.logcompHvC, cluster_rows = TRUE, cutree_rows = 4)
+pheatmap(is.ovary.logcompHvC, cluster_rows = TRUE, cutree_rows = 4, scale ="row")
+```
+
+```{r}
+###anther heat maps - Ren###
+log.anth <- cpm(dge.subset_anth, log = TRUE, prior.count = 2)
+is.anth.logcompHvC <- log.anth[is.de.anth_hvc != 0, ]
+
+#view(is.anth.logcompHvC)
+pheatmap(is.anth.logcompHvC, cluster_rows = TRUE, cutree_rows = 4)
+pheatmap(is.anth.logcompHvC, cluster_rows = TRUE, cutree_rows = 4, scale ="row")
+```
+
+```{r}
+### venn diagram — Simran###
+head(tbl.anth_hvc)
+anth.DE <- subset(tbl.anth_hvc, tbl.anth_hvc$FDR < 0.05)
+head(anth.DE)
+
+ov.DE <- subset(tbl.ovary_hvc, tbl.ovary_hvc$FDR < 0.05)
+leaf.DE <- subset(tbl.leaf_hvc, tbl.leaf_hvc$FDR < 0.05)
+
+
+anth.up <- subset(anth.DE, anth.DE$logFC > 0)
+anth.down <- subset(anth.DE, anth.DE$logFC < 0)
+
+venn.diagram(
+  x = list(anther = anth.DE$GENE, ovary = ov.DE$GENE, leaf = leaf.DE$GENE),
+  filename = "VennDiagram2.png",
+  col = "transparent", 
+  fill = viridis(3),
+  alpha = 0.5,
+  label.col = c("black", "black", "black", "black", "black", "black", "black"),
+  cex = 1.5,
+  fontfamily = "Helvetica",
+  cat.fontfamily = "Helvetica",
+  fontface = "bold",
+  cat.default.pos = "text",
+  cat.col = c("black", "black", "black"),
+  cat.cex = 2,
+  cat.dist = c(0.05, 0.05, 0.05),
+  cat.pos = c(10, 10, 10)
+)
+ 
+### Exactracting a table of overlapping genes###
+anther <- anth.DE$GENE
+ovary  <- ov.DE$GENE
+leaf   <- leaf.DE$GENE
+
+common_all <- Reduce(intersect, list(anther, ovary, leaf))
+anth_ovary <- setdiff(intersect(anther, ovary), leaf)
+anth_leaf <- setdiff(intersect(anther, leaf), ovary)
+ovary_leaf <- setdiff(intersect(ovary, leaf), anther)
+anth_only <- setdiff(anther, union(ovary, leaf))
+
+ovary_only <- setdiff(ovary, union(anther, leaf))
+leaf_only <- setdiff(leaf, union(anther, ovary))
+
+write.csv(common_all, "common_all_genes.csv", row.names = FALSE)
+
+```
+
+
+```{r}
+###Barplot + pairwise — Simran ###
+
+total_anther <- length(tbl.anth_hvc$GENE)
+total_ovary <- length(tbl.ovary_hvc$GENE)
+total_leaf <- length(tbl.leaf_hvc$GENE)
+
+anth.up <- subset(anth.DE, anth.DE$logFC > 0)
+anth.down <- subset(anth.DE, anth.DE$logFC < 0)
+anth_up_num <- length(anth.up$GENE)
+anth_down_num <- length(anth.down$GENE)
+
+
+ov.up <- subset(ov.DE, ov.DE$logFC > 0)
+ov.down <- subset(ov.DE, ov.DE$logFC < 0)
+ov_up_num <- length(ov.up$GENE)
+ov_down_num <- length(ov.down$GENE)
+
+
+leaf.up <- subset(leaf.DE, leaf.DE$logFC > 0)
+leaf.down <- subset(leaf.DE, leaf.DE$logFC < 0)
+leaf_up_num <- length(leaf.up$GENE)
+leaf_down_num <- length(leaf.down$GENE)
+
+x <- c(anth_up_num, anth_down_num, ov_up_num, ov_down_num, leaf_up_num, leaf_down_num) 
+n <- c(total_anther,total_anther, total_ovary,total_ovary,  total_leaf,total_leaf)
+ov_up_num/total_ovary
+ov_down_num/total_ovary
+anth_up_num/total_anther
+anth_down_num/total_anther
+leaf_up_num/total_leaf
+leaf_down_num/total_leaf
+
+pairwise.prop.test(x, n)
+
+part <- c("Leaf", "Leaf", "Anther", "Anther", "Ovary", "Ovary")
+up_down <- c("Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated")
+values <- c(leaf_up_num/total_leaf, leaf_down_num/total_leaf, anth_up_num/total_anther, anth_down_num/total_anther, ov_up_num/total_ovary, ov_down_num/total_ovary)
+part <- factor(part, levels = c("Leaf", "Anther", "Ovary"))
+
+df <- data.frame(
+  part = part,
+  up_down = up_down,
+  values = values
+)
+head(df)
+
+ggplot(df, aes(x = part, y = values, fill = up_down)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  scale_fill_viridis_d() +
+  labs(
+    x = "Tissue",
+    y = "Proportion of Total Genes",
+    fill = "Direction"
+  ) +
+  theme_minimal()
+
+
+
+```
+
+```{r}
+### Adam — Canidate selection ####
+#reformating that extracted list, preparing for intersect
+auxin.canidate <- read_tsv("auxin_candidate_genes.tsv")
+
+absciscis_acid <- read_tsv("abscisic_acid_candidate_genes.tsv")
+ethylene <- read_tsv("keyword_results.this.gridOptions.context.tsv")
+jasmonic_canidate <- read_tsv("jasmonic_candidate_genes.tsv")
+salicylic_canidate <- read_tsv("salicylic_candidate_genes.tsv")
+brassinosteriod <- read_tsv("brassinosteroid_candidate_genes.tsv")
+cytokinin <- read_tsv("cytokinin_candidate_genes.tsv")
+giberellin <- read_tsv("giberellin_candidate_genes.tsv")
+library(stringr)
+ethylene.masterlist <- ethylene$Description |>
+  str_remove(" - \\(1.*") |>
+  str_c(".v3.1")|> 
+  str_remove(" ")
+absiciscis.masterlist <- absciscis_acid$Description |>
+  str_remove(" - \\(1.*") |>
+  str_c(".v3.1")|> 
+  str_remove(" ")
+auxin.masterlist <- auxin.canidate$Description |> 
+  str_remove(" - \\(1.*") |>
+  str_c(".v3.1")|> 
+  str_remove(" ")
+jasmonic.masterlist <- jasmonic_canidate$Description |> 
+  str_remove(" - \\(1.*") |>
+  str_c(".v3.1") |> 
+  str_remove(" ")
+salsalicylic.masterlist <- salicylic_canidate$Description |> 
+  str_remove(" - \\(1.*") |>
+  str_c(".v3.1") |> 
+  str_remove(" ")
+brassinosteriod.masterlist <- brassinosteriod$Description |> 
+  str_remove(" - \\(1.*") |>
+  str_c(".v3.1") |> 
+  str_remove(" ")
+cytokinin.masterlit <- cytokinin$Description |> 
+  str_remove(" - \\(1.*") |>
+  str_c(".v3.1") |> 
+  str_remove(" ")
+giberellin.masterlit <- giberellin$Description |> 
+  str_remove(" - \\(1.*") |>
+  str_c(".v3.1") |> 
+  str_remove(" ")
+```
+
+```{r}
+###canidate formatin — Adam ###
+length(testDGE$genes$GENE)
+testDGE
+ethylene_overlap <- intersect(ethylene.masterlist, all.DGE$GENE)
+absciscis_overlap <- intersect(absiciscis.masterlist, all.DGE$GENE)
+auxin_overlap <- intersect(auxin.masterlist, all.DGE$GENE)
+jasmonic_overlap <-  intersect(jasmonic.masterlist, all.DGE$GENE)
+salsalicylic_overlap <-  intersect(salsalicylic.masterlist, all.DGE$GENE)
+brassinosteriod_overlap<- intersect(brassinosteriod.masterlist, all.DGE$GENE)
+cytokinin_overlap <-  intersect(cytokinin.masterlit, all.DGE$GENE)
+giberellin_overlap <-  intersect(giberellin.masterlit, all.DGE$GENE)
+
+
+```
+
+```{r}
+###tables — Adam###
+ethylene_tbl <- all.DGE |> 
+  dplyr::filter(GENE %in% ethylene.masterlist,
+    PValue < 0.05,
+    abs(logFC) > 1
+  )
+
+absciscis_tbl <- all.DGE |> 
+  dplyr::filter(GENE %in% absiciscis.masterlist,
+    PValue < 0.05
+  )
+
+auxin_tbl <- all.DGE |> 
+  dplyr::filter(GENE %in% auxin.masterlist,
+    PValue < 0.05
+  )
+
+jasmonic_tbl <- all.DGE |> 
+  dplyr::filter(GENE %in% jasmonic.masterlist,
+    PValue < 0.05,
+    abs(logFC) > 1
+  )
+
+salsaliyc_tbl <- all.DGE |> 
+  dplyr::filter(GENE %in% salsalicylic.masterlist,
+    PValue < 0.05,
+    abs(logFC) > 1
+  )
+brassinosteriod_tbl <- all.DGE |> 
+  dplyr::filter(GENE %in% brassinosteriod.masterlist,
+    PValue < 0.05,
+    abs(logFC) > 1
+  )
+
+cytokinin_tbl <- all.DGE |> 
+  dplyr::filter(GENE %in% cytokinin.masterlit,
+    PValue < 0.05,
+    abs(logFC) > 1
+  )
+giberellin_tbl <- all.DGE |> 
+  dplyr::filter(GENE %in% giberellin.masterlit,
+    PValue < 0.05,
+    abs(logFC) > 1
+  )
+
+anther_tbl <- all.DGE |> 
+   dplyr::filter(GENE %in% anth.DE$GENE,
+    PValue < 0.05,
+    abs(logFC) > 1
+  ) 
+
+leaf_tbl <- all.DGE |> 
+   dplyr::filter(GENE %in% leaf.DE$GENE,
+    PValue < 0.05,
+    abs(logFC) > 1
+  ) 
+
+ovary_tbl <- all.DGE |> 
+  dplyr::filter(GENE %in% leaf.DE$GENE,
+    PValue < 0.05,
+    abs(logFC) > 1
+  ) 
+
+
+anther_gt <- anther_tbl |> 
+  gt() |>
+  data_color(
+    columns = logFC,
+    fn = col_numeric(
+      palette = c("blue", "white", "red"),
+      domain = c(min(anther_tbl$logFC), max(anther_tbl$logFC))
+    ) 
+  )
+ovary_gt <- ovary_tbl |> 
+  gt() |> 
+  data_color(
+    columns = logFC,
+    fn = col_numeric(
+      palette = c("blue", "white", "red"),
+      domain = c(min(ovary_tbl$logFC), max(ovary_tbl$logFC))))
+
+leaf_gt <- leaf_tbl |> 
+  gt() |> 
+    data_color(
+    columns = logFC,
+    fn = col_numeric(
+      palette = c("blue", "white", "red"),
+      domain = c(min(leaf_tbl$logFC), max(leaf_tbl$logFC))))
+ethylene_gt <- ethylene_tbl |>
+  gt() |>
+  data_color(
+    columns = logFC,
+    fn = col_numeric(
+      palette = c("blue", "white", "red"),
+      domain = c(min(ethylene_tbl$logFC), max(ethylene_tbl$logFC))
+    ) 
+  )
+
+absciscis_gt <- absciscis_tbl |> 
+  gt() |>
+  data_color(
+    columns = logFC,
+    fn = col_numeric(
+      palette = c("blue", "white", "red"),
+      domain = c(min(absciscis_tbl$logFC), max(absciscis_tbl$logFC))
+    ) 
+  )
+
+auxin_gt <- auxin_tbl |> 
+  gt() |>
+  data_color(
+    columns = logFC,
+    fn = col_numeric(
+      palette = c("blue", "white", "red"),
+      domain = c(min(auxin_tbl$logFC), max(auxin_tbl$logFC))
+    ) 
+  )
+
+jasmonic_gt <- jasmonic_tbl |> 
+  gt() |>
+  data_color(
+    columns = logFC,
+    fn = col_numeric(
+      palette = c("blue", "white", "red"),
+      domain = c(min(jasmonic_tbl$logFC), max(jasmonic_tbl$logFC))
+    ) 
+  )
+DGE_tbl <- all.DGE |> 
+    filter(PValue < 0.05) |> 
+    filter(abs(logFC) > 1
+  )
+
+dge_gt <- DGE_tbl |> 
+  gt() |> 
+  data_color(
+    columns= logFC,
+    fn = col_numeric(
+      palette = c("blue", "white", "red"),
+      domain = c(min(all.DGE$logFC), max(all.DGE$logFC))
+    )
+  )
+
+ brass_gt <- brassinosteriod_tbl |> gt() |>
+  data_color(
+    columns = logFC,
+    fn = col_numeric(
+      palette = c("blue", "white", "red"),
+      domain = c(min(brassinosteriod_tbl$logFC), max(brassinosteriod_tbl$logFC))
+    ) 
+  )
+ 
+ cytokinin_gt <- cytokinin_tbl |> gt() |>
+  data_color(
+    columns = logFC,
+    fn = col_numeric(
+      palette = c("blue", "white", "red"),
+      domain = c(min(cytokinin_tbl$logFC), max(cytokinin_tbl$logFC))
+    ) 
+  )
+ 
+gib_gt <- giberellin_tbl |> gt() |>
+  data_color(
+    columns = logFC,
+    fn = col_numeric(
+      palette = c("blue", "white", "red"),
+      domain = c(min(giberellin_tbl$logFC), max(giberellin_tbl$logFC))
+    ) 
+  )
+```
+
+```{r}
+###tissue overlap venn diagrams — ADAM###
+head(tbl.anth_hvc)
+anth.DE <- subset(tbl.anth_hvc, tbl.anth_hvc$FDR < 0.05)
+head(anth.DE)
+
+ov.DE <- subset(tbl.ovary_hvc, tbl.ovary_hvc$FDR < 0.05)
+leaf.DE <- subset(tbl.leaf_hvc, tbl.leaf_hvc$FDR < 0.05)
+
+
+anth.up <- subset(anth.DE, anth.DE$logFC > 0)
+anth.down <- subset(anth.DE, anth.DE$logFC < 0)
+
+canidate.genes.compiled <-  c(auxin.masterlist,jasmonic.masterlist,salsalicylic.masterlist,ethylene.masterlist)
+
+venn.diagram(
+  x = list(
+    anther = anth.DE$GENE,
+    ovary = ov.DE$GENE,
+    leaf = leaf.DE$GENE,
+    candidates= canidate.genes.compiled
+  ),
+  filename = "VennDiagramTissueOverlap.png",
+  col = "transparent", 
+  fill = viridis(4),
+  alpha = 0.5,
+  label.col = "black",   # <-- FIXED
+  cex = 1.5,
+  fontfamily = "Helvetica",
+  cat.fontfamily = "Helvetica",
+  fontface = "bold",
+  cat.default.pos = "text",
+  cat.col = c("black", "black", "black", "black"),
+  cat.cex = 2,
+  cat.dist = c(0.05, 0.05, 0.05, 0.05),
+  cat.pos = c(10, 10, 10, 10))
+```
+```{r}
+common_all_horomones <- Reduce(intersect, list(anther, ovary, leaf,canidate.genes.compiled))
+```
+
