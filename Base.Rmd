@@ -38,10 +38,7 @@ mimGroups <- Mimulus_Sample_Info$Group
 
 testDGE <- DGEList(counts = mimData, group = factor(mimGroups), genes = mimAnnotation)
 dge.subset_anth <- testDGE[,which(testDGE$samples$group == "An_F1_C" | testDGE$samples$group == "An_F1_H")]
-# dge.subset_anth$samples$group[6] <- factor("An_F1_C")
-# dge.subset_anth$samples$group[4] <- factor("An_F1_H")
-# dge.subset_anth$samples$group[3] <- factor("An_F1_H")
-# dge.subset_anth$samples$group[8]<- factor("An_F1_C")
+dge.subset_anth$samples$group[6] <- factor("An_F1_C")
 
 dge.subset_leaf <- testDGE[,which(testDGE$samples$group == "Le_F1_C" | testDGE$samples$group == "Le_F1_H")]
 # dge.subset_leaf$samples$group[4] <- factor("Le_F1_H")
@@ -109,7 +106,7 @@ dge.subset_bud <- calcNormFactors(dge.subset_bud)
 
 ```{r}
 ### mds plots ###
-plotMDS.DGEList(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), dim.plot = c(1,2))
+plotMDS(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), dim.plot = c(1,2))
 
 #label = testDGE$samples$group
 ```
@@ -117,22 +114,19 @@ plotMDS.DGEList(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), di
 
 
 ```{r}
-plotMDS(dge.subset_anth, method="bcv", col=as.numeric(dge.subset_anth$samples$group), label =dge.subset_anth$samples$group, dim.plot = c(1,2))
-
+plotMDS(dge.subset_anth, method="bcv", col=as.numeric(dge.subset_anth$samples$group), label = dge.subset_anth$samples$group, dim.plot = c(1,2))
 ```
+
 ```{r}
 
 plotMDS(dge.subset_leaf, method="bcv", col=as.numeric(dge.subset_leaf$samples$group), label =dge.subset_leaf$samples$group, dim.plot = c(1,2))
-
-
 ```
+
 ```{r}
-###Ren###
 plotMDS(dge.subset_ovary, method="bcv", col=as.numeric(dge.subset_ovary$samples$group), label =dge.subset_ovary$samples$group, dim.plot = c(1,2))
 ```
 
 ```{r}
-###Adam###
 #Building desgin
 design <-  model.matrix(~0+group, data = testDGE$samples)
 design.anth <- model.matrix(~0+group, data = dge.subset_anth$samples)
@@ -144,13 +138,15 @@ colnames(design.leaf) <- levels(dge.subset_leaf$samples$group)
 design.ovary <- model.matrix(~0+group, data=dge.subset_ovary$samples)
 colnames(design.ovary) <- levels(dge.subset_ovary$samples$group)
 
-###estimate dispersion
-dge.subset_anth<- estimateDisp(dge.subset_anth, design.anth)
-dge.subset_leaf<- estimateDisp(dge.subset_leaf, design.leaf)
-dge.subset_ovary<- estimateDisp(dge.subset_ovary, design.ovary)
-testDGE <- estimateDisp(testDGE,design)
+design.bud <- model.matrix(~0+group, data=dge.subset_bud$samples)
+colnames(design.bud) <- levels(dge.subset_bud$samples$group)
 
-testDGE
+###estimate dispersion
+dge.subset_anth <- estimateDisp(dge.subset_anth, design.anth)
+dge.subset_leaf <- estimateDisp(dge.subset_leaf, design.leaf)
+dge.subset_ovary <- estimateDisp(dge.subset_ovary, design.ovary)
+dge.subset_bud <- estimateDisp(dge.subset_bud, design.bud)
+testDGE <- estimateDisp(testDGE,design)
 ```
 
 ```{r}
@@ -170,57 +166,56 @@ results <- topTags(et, n = Inf)$table
 et.anth.hvc <- exactTest(dge.subset_anth, pair = c("An_F1_C","An_F1_H"))
 et.leaf.hvc <- exactTest(dge.subset_leaf, pair = c("Le_F1_C", "Le_F1_H"))
 et.ovary.hvc <- exactTest(dge.subset_ovary, pair = c ("Ov_F1_C", "Ov_F1_H"))
+et.bud.hvc <- exactTest(dge.subset_bud, pair = c ("Bu_F1_C", "Bu_F1_H"))
+
 all.DGE <- topTags(et, n=nrow(et$table))$table
 tbl.anth_hvc <- topTags(et.anth.hvc, n=nrow(et.anth.hvc$table))$table
 tbl.leaf_hvc <- topTags(et.leaf.hvc,n=nrow(et.leaf.hvc))$table
 tbl.ovary_hvc <- topTags(et.ovary.hvc, n=nrow(et.ovary.hvc))$table
+tbl.bud_hvc <- topTags(et.bud.hvc, n=nrow(et.bud.hvc))$table
 
 #final tables of all differentially expressed genes
 is.de.leaf_hvc <-  decideTests.DGEExact(et.leaf.hvc,p=0.05)
 is.de.anth_hvc <-  decideTests.DGEExact(et.anth.hvc,p=0.05)
 is.de.ovary_hvc <- decideTests.DGEExact(et.ovary.hvc,p=0.05)
-
+is.de.bud_hvc <- decideTests.DGEExact(et.bud.hvc,p=0.05)
 ```
 
 ```{r}
-##pheat map for leaves — Ren
+## leaf heat map ##
 log.leaf <- cpm(dge.subset_leaf, log = TRUE, prior.count = 2)
 is.leaf.logcompHvC <- log.leaf[is.de.leaf_hvc != 0, ]
 
-view(is.leaf.logcompHvC)
 pheatmap(is.leaf.logcompHvC, cluster_rows = TRUE, cutree_rows = 4)
 pheatmap(is.leaf.logcompHvC, cluster_rows = TRUE, cutree_rows = 4, scale ="row")
-
 ```
+
 ```{r}
-###ovary heat maps - Ren###
+### ovary heat maps ###
 log.ovary <- cpm(dge.subset_ovary, log = TRUE, prior.count = 2)
 is.ovary.logcompHvC <- log.ovary[is.de.ovary_hvc != 0, ]
-
 
 pheatmap(is.ovary.logcompHvC, cluster_rows = TRUE, cutree_rows = 4)
 pheatmap(is.ovary.logcompHvC, cluster_rows = TRUE, cutree_rows = 4, scale ="row")
 ```
 
 ```{r}
-###anther heat maps - Ren###
+## anther heat maps ##
 log.anth <- cpm(dge.subset_anth, log = TRUE, prior.count = 2)
 is.anth.logcompHvC <- log.anth[is.de.anth_hvc != 0, ]
 
-#view(is.anth.logcompHvC)
 pheatmap(is.anth.logcompHvC, cluster_rows = TRUE, cutree_rows = 4)
 pheatmap(is.anth.logcompHvC, cluster_rows = TRUE, cutree_rows = 4, scale ="row")
 ```
 
 ```{r}
-### venn diagram — Simran###
+### venn diagram ###
 head(tbl.anth_hvc)
 anth.DE <- subset(tbl.anth_hvc, tbl.anth_hvc$FDR < 0.05)
 head(anth.DE)
 
 ov.DE <- subset(tbl.ovary_hvc, tbl.ovary_hvc$FDR < 0.05)
 leaf.DE <- subset(tbl.leaf_hvc, tbl.leaf_hvc$FDR < 0.05)
-
 
 anth.up <- subset(anth.DE, anth.DE$logFC > 0)
 anth.down <- subset(anth.DE, anth.DE$logFC < 0)
@@ -318,14 +313,11 @@ ggplot(df, aes(x = part, y = values, fill = up_down)) +
     fill = "Direction"
   ) +
   theme_minimal()
-
-
-
 ```
 
 ```{r}
-### Adam — Canidate selection ####
-#reformating that extracted list, preparing for intersect
+### candidate selection ####
+#reformatting that extracted list, preparing for intersect
 auxin.canidate <- read_tsv("auxin_candidate_genes.tsv")
 
 absciscis_acid <- read_tsv("abscisic_acid_candidate_genes.tsv")
@@ -371,7 +363,7 @@ giberellin.masterlit <- giberellin$Description |>
 ```
 
 ```{r}
-###canidate formatin — Adam ###
+###candidate formation ###
 length(testDGE$genes$GENE)
 testDGE
 ethylene_overlap <- intersect(ethylene.masterlist, all.DGE$GENE)
@@ -382,8 +374,6 @@ salsalicylic_overlap <-  intersect(salsalicylic.masterlist, all.DGE$GENE)
 brassinosteriod_overlap<- intersect(brassinosteriod.masterlist, all.DGE$GENE)
 cytokinin_overlap <-  intersect(cytokinin.masterlit, all.DGE$GENE)
 giberellin_overlap <-  intersect(giberellin.masterlit, all.DGE$GENE)
-
-
 ```
 
 ```{r}
