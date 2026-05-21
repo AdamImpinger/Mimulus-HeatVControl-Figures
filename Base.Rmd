@@ -45,16 +45,12 @@ mimGroups
 testDGE <- DGEList(counts = mimData, group = factor(mimGroups), genes = mimAnnotation)
 plotMDS(testDGE, col=as.numeric(testDGE$samples$group))
 dge.subset_anth <- testDGE[,which(testDGE$samples$group == "An_F1_C" | testDGE$samples$group == "An_F1_H")]
-<<<<<<< HEAD
-dge.subset_anth$samples$group[6] <- factor("An_F1_C")
-=======
+
 # dge.subset_anth$samples$group[6] <- factor("An_F1_C")
 # dge.subset_anth$samples$group[4] <- factor("An_F1_H")
 # dge.subset_anth$samples$group[3] <- factor("An_F1_H")
 # dge.subset_anth$samples$group[8]<- factor("An_F1_C")
 #dge.subset_anth$samples$group[c(6,4,3,8)] <- factor(c("An_F1_C","An_F1_H","An_F1_H","An_F1_C"))
-
->>>>>>> 8668494 (including sample infor csv and rouhg draft for nmds plot)
 
 dge.subset_leaf <- testDGE[,which(testDGE$samples$group == "Le_F1_C" | testDGE$samples$group == "Le_F1_H")]
 # dge.subset_leaf$samples$group[4] <- factor("Le_F1_H")
@@ -122,12 +118,8 @@ dge.subset_bud <- calcNormFactors(dge.subset_bud)
 
 ```{r}
 ### mds plots ###
-<<<<<<< HEAD
-plotMDS(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), dim.plot = c(1,2))
-=======
 plotMDS.DGEList(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), dim.plot = c(1,3))
 head(testDGE$samples)
->>>>>>> 8668494 (including sample infor csv and rouhg draft for nmds plot)
 
 #label = testDGE$samples$group
 ```
