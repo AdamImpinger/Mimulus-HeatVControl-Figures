@@ -40,6 +40,7 @@ mim_table <- read_table("all_counts3.out", col_names = TRUE)
 mimData <- mim_table[,2:dim(mim_table)[2]]
 mimAnnotation <- read.csv("Mimgutt_annotations.csv", header = T)
 mimGroups <- Mimulus_Sample_Info$Group
+mimGroups
 
 testDGE <- DGEList(counts = mimData, group = factor(mimGroups), genes = mimAnnotation)
 ## correcting groups to account for numerical sorting of plant # in testDGE samples not matching mimulus_sample_info order (54 in heat treatment, 60 in cold) 
@@ -104,7 +105,8 @@ dge.subset_bud <- calcNormFactors(dge.subset_bud)
 
 ```{r}
 ### mds plots ###
-plotMDS.DGEList(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), dim.plot = c(1,2))
+plotMDS.DGEList(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), dim.plot = c(1,3))
+head(testDGE$samples)
 
 #label = testDGE$samples$group
 ```

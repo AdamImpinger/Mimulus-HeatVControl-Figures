@@ -1,7 +1,6 @@
 Sample_ID,Plant_ID,Line,Tissue,Temp,Treatment,Group
 S1,48,F1,An,25,C,An_F1_C
 S2,48,F1,Bu,25,C,Bu_F1_C
-<<<<<<< HEAD
 S3,48,F1,Le,25,C,Le_F1_C
 S4,48,F1,Ov,25,C,Ov_F1_C
 S5,53,F1,An,25,C,An_F1_C
@@ -32,7 +31,6 @@ S29,65,F1,An,37,H,An_F1_H
 S30,65,F1,Bu,37,H,Bu_F1_H
 S31,65,F1,Le,37,H,Le_F1_H
 S32,65,F1,Ov,37,H,Ov_F1_H
-=======
 S4,48,F1,Le,25,C,Le_F1_C
 S3,48,F1,Ov,25,C,Ov_F1_C
 S5,53,F1,An,25,C,An_F1_C
@@ -63,4 +61,3 @@ S29,65,F1,An,37,H,An_F1_H
 S30,65,F1,Bu,37,H,Bu_F1_H
 S32,65,F1,Le,37,H,Le_F1_H
 S31,65,F1,Ov,37,H,Ov_F1_H
->>>>>>> 8668494 (including sample infor csv and rouhg draft for nmds plot)
