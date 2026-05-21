@@ -26,7 +26,7 @@ library(scales)
 library(vegan)
 #install.packages("vegan3d")
 library(vegan3d)
-#running with errors, did some sleuthing and it seems like this will still work, the openGL error this mentions is only relevent for creating big interactable graphs
+#running with errors, did some sleuthing and it seems like this will still work, the openGL error this mentions is only relevent for creating big interactive graphs
 ```
 
 ```{r}
@@ -36,15 +36,26 @@ mim_table <- read_table("all_counts3.out", col_names = TRUE)
 ```
 
 ```{r}
-###reordering dge.subsets and testDGE
+###reordering dge.subsets and testDGE. refactoring necessary bc testDGE sorts numerically
 mimData <- mim_table[,2:dim(mim_table)[2]]
 mimAnnotation <- read.csv("Mimgutt_annotations.csv", header = T)
 mimGroups <- Mimulus_Sample_Info$Group
-mimGroups
 
 testDGE <- DGEList(counts = mimData, group = factor(mimGroups), genes = mimAnnotation)
-plotMDS(testDGE, col=as.numeric(testDGE$samples$group))
+## correcting groups to account for numerical sorting of plant # in testDGE samples not matching mimulus_sample_info order (54 in heat treatment, 60 in cold) 
+testDGE$samples$group[9] <- factor("An_F1_H")
+testDGE$samples$group[21] <- factor("An_F1_C")
+testDGE$samples$group[10] <- factor("Bu_F1_H")
+testDGE$samples$group[22] <- factor("Bu_F1_C")
+testDGE$samples$group[11] <- factor("Le_F1_H")
+testDGE$samples$group[23] <- factor("Le_F1_C")
+testDGE$samples$group[12] <- factor("Ov_F1_H")
+testDGE$samples$group[24] <- factor("Ov_F1_C")
+```
+```{r}
+## legacy subsets --> finseth said not to do it this way, bc we lose power
 dge.subset_anth <- testDGE[,which(testDGE$samples$group == "An_F1_C" | testDGE$samples$group == "An_F1_H")]
+<<<<<<< HEAD
 
 # dge.subset_anth$samples$group[6] <- factor("An_F1_C")
 # dge.subset_anth$samples$group[4] <- factor("An_F1_H")
@@ -52,28 +63,12 @@ dge.subset_anth <- testDGE[,which(testDGE$samples$group == "An_F1_C" | testDGE$s
 # dge.subset_anth$samples$group[8]<- factor("An_F1_C")
 #dge.subset_anth$samples$group[c(6,4,3,8)] <- factor(c("An_F1_C","An_F1_H","An_F1_H","An_F1_C"))
 
+=======
+>>>>>>> cacfb19 (re-factored testDGEs)
 dge.subset_leaf <- testDGE[,which(testDGE$samples$group == "Le_F1_C" | testDGE$samples$group == "Le_F1_H")]
-# dge.subset_leaf$samples$group[4] <- factor("Le_F1_H")
-# dge.subset_leaf$samples$group[7] <- factor("Le_F1_C")
-
 dge.subset_ovary <- testDGE[,which(testDGE$samples$group == "Ov_F1_C" | testDGE$samples$group == "Ov_F1_H")]
-# dge.subset_ovary$samples$group[5] <- factor("Ov_F1_C")
-# dge.subset_ovary$samples$group[2] <- factor("Ov_F1_H")
-
 dge.subset_bud <- testDGE[,which(testDGE$samples$group == "Bu_F1_C" | testDGE$samples$group == "Bu_F1_H")]
-
-# #cleaning overall testDGE
-# testDGE$samples$group[5] <- factor("Ov_F1_H")
-# testDGE$samples$group[7] <- factor("An_F1_H")
-# testDGE$samples$group[10] <- factor("An_F1_H")
-# testDGE$samples$group[12] <- factor("Le_F1_H")
-# testDGE$samples$group[14] <- factor("Ov_F1_C")
-# testDGE$samples$group[16] <- factor("An_F1_C")
-# testDGE$samples$group[22] <- factor("An_F1_C")
-# testDGE$samples$group[21] <- factor("Le_F1_C")
-
 ```
-
 
 ```{r}
 ###Apply + keep step + columns###
@@ -118,8 +113,7 @@ dge.subset_bud <- calcNormFactors(dge.subset_bud)
 
 ```{r}
 ### mds plots ###
-plotMDS.DGEList(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), dim.plot = c(1,3))
-head(testDGE$samples)
+plotMDS.DGEList(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), dim.plot = c(1,2))
 
 #label = testDGE$samples$group
 ```
