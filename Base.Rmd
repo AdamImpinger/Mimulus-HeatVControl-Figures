@@ -22,9 +22,7 @@ library(viridis)
 library(stringr)
 library(gt)
 library(scales)
-#install.packages("vegan")
 library(vegan)
-#install.packages("vegan3d")
 library(vegan3d)
 #running with errors, did some sleuthing and it seems like this will still work, the openGL error this mentions is only relevent for creating big interactive graphs
 ```
@@ -53,6 +51,7 @@ testDGE$samples$group[23] <- factor("Le_F1_C")
 testDGE$samples$group[12] <- factor("Ov_F1_H")
 testDGE$samples$group[24] <- factor("Ov_F1_C")
 ```
+
 ```{r}
 ## legacy subsets --> finseth said not to do it this way, bc we lose power
 dge.subset_anth <- testDGE[,which(testDGE$samples$group == "An_F1_C" | testDGE$samples$group == "An_F1_H")]
@@ -105,8 +104,7 @@ dge.subset_bud <- calcNormFactors(dge.subset_bud)
 
 ```{r}
 ### mds plots ###
-plotMDS.DGEList(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), dim.plot = c(1,3))
-head(testDGE$samples)
+plotMDS.DGEList(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), dim.plot = c(1,2))
 
 #label = testDGE$samples$group
 ```
@@ -125,10 +123,10 @@ colnames(nmds_points) <- c("NMDS1", "NMDS2", "NMDS3")
 # 2. Add your sample metadata (e.g., condition or batch)
 # Assuming you have a dataframe called 'metadata' with a column 'Group'
 nmds_points$SampleID <- rownames(nmds_points)
-nmds_points$Group <- mimGroups
+nmds_points$Group <- Mimulus_Sample_Info$Treatment
 
-colors <- ifelse(nmds_points$Group == "Treatment", "blue", "red")
-
+colors <- c("lightskyblue1", "lightskyblue2", "lightskyblue3","lightskyblue4", "goldenrod1","goldenrod2", "goldenrod3","goldenrod4")
+colors <- colors[as.numeric(testDGE$samples$group)]
 
 # Create static 3D plot
 sample.3d.plot <- scatterplot3d(x = nmds_points$NMDS1, 
