@@ -1,112 +1,94 @@
 ---
-title: "Cleaned-labeled-FinalProject"
-author: "Adam Akins"
-date: "2026-04-29"
+title: "Finseth Ren Figures"
+author: "Ren Henry-Mitchell"
+date: "2026-05-20"
 output: html_document
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-##boop
-```
-
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 ```{r}
 #libraries
 
-library("pheatmap")
-library("RColorBrewer")
-library("gprofiler2")
+library(pheatmap)
+library(RColorBrewer)
+library(gprofiler2)
 library(tidyverse)
 library(edgeR)
-library("clusterProfiler")
-library("VennDiagram") 
-library("edgeR")
-library("clusterProfiler")
-library("ggplot2")
-library("viridis")
+library(clusterProfiler)
+library(VennDiagram) 
+library(edgeR)
+library(clusterProfiler)
+library(ggplot2)
+library(viridis)
 library(stringr)
 library(gt)
 library(scales)
-
 ```
 
 ```{r}
 #Reading raw files
 Mimulus_Sample_Info <- read_csv("Mimulus_Sample_Info.csv")
-mim_table <- read_table("counts3.out", col_names = TRUE)
-subset_mimulus_sampleinfo <- Mimulus_Sample_Info |> filter(Tissue != "Bu") 
-Cleaned_Mimulus_Sample_Info_try2 <-read_csv("Cleaned_Mimulus_Sample_Info_try2.csv")
-mimulus.out.treatmentid <- subset_mimulus_sampleinfo |> join_by()
-#write.csv(subset_mimulus_sampleinfo, file  ="Cleaned_Mimulus_Sample_info")
+mim_table <- read_table("all_counts3.out", col_names = TRUE)
 ```
 
 ```{r}
-###reordering dge.subsets and testDGE — Adam###
+###reordering dge.subsets and testDGE
 mimData <- mim_table[,2:dim(mim_table)[2]]
 mimAnnotation <- read.csv("Mimgutt_annotations.csv", header = T)
-mimGroups <- Cleaned_Mimulus_Sample_Info_try2$Group
+mimGroups <- Mimulus_Sample_Info$Group
 
-testDGE <- DGEList(counts=mimData, group =factor(mimGroups), genes = mimAnnotation)
+testDGE <- DGEList(counts = mimData, group = factor(mimGroups), genes = mimAnnotation)
 dge.subset_anth <- testDGE[,which(testDGE$samples$group == "An_F1_C" | testDGE$samples$group == "An_F1_H")]
-dge.subset_anth$samples$group[6] <- factor("An_F1_C")
-dge.subset_anth$samples$group[4] <- factor("An_F1_H")
-dge.subset_anth$samples$group[3] <- factor("An_F1_H")
-dge.subset_anth$samples$group[8]<- factor("An_F1_C")
-dge.subset_leaf <- testDGE[,which(testDGE$samples$group == "Le_F1_C" | testDGE$samples$group == "Le_F1_H")]
-dge.subset_leaf$samples$group[4] <- factor("Le_F1_H")
-dge.subset_leaf$samples$group[7] <- factor("Le_F1_C")
-dge.subset_ovary <- testDGE[,which(testDGE$samples$group == "Ov_F1_C" | testDGE$samples$group == "Ov_F1_H")]
-dge.subset_ovary$samples$group[5] <- factor("Ov_F1_C")
-dge.subset_ovary$samples$group[2] <- factor("Ov_F1_H")
+# dge.subset_anth$samples$group[6] <- factor("An_F1_C")
+# dge.subset_anth$samples$group[4] <- factor("An_F1_H")
+# dge.subset_anth$samples$group[3] <- factor("An_F1_H")
+# dge.subset_anth$samples$group[8]<- factor("An_F1_C")
 
-#cleaning overall testDGE
-testDGE$samples$group[5] <- factor("Ov_F1_H")
-testDGE$samples$group[7] <- factor("An_F1_H")
-testDGE$samples$group[10] <- factor("An_F1_H")
-testDGE$samples$group[12] <- factor("Le_F1_H")
-testDGE$samples$group[14] <- factor("Ov_F1_C")
-testDGE$samples$group[16] <- factor("An_F1_C")
-testDGE$samples$group[22] <- factor("An_F1_C")
-testDGE$samples$group[21] <- factor("Le_F1_C")
+dge.subset_leaf <- testDGE[,which(testDGE$samples$group == "Le_F1_C" | testDGE$samples$group == "Le_F1_H")]
+# dge.subset_leaf$samples$group[4] <- factor("Le_F1_H")
+# dge.subset_leaf$samples$group[7] <- factor("Le_F1_C")
+
+dge.subset_ovary <- testDGE[,which(testDGE$samples$group == "Ov_F1_C" | testDGE$samples$group == "Ov_F1_H")]
+# dge.subset_ovary$samples$group[5] <- factor("Ov_F1_C")
+# dge.subset_ovary$samples$group[2] <- factor("Ov_F1_H")
+
+dge.subset_bud <- testDGE[,which(testDGE$samples$group == "Bu_F1_C" | testDGE$samples$group == "Bu_F1_H")]
+
+# #cleaning overall testDGE
+# testDGE$samples$group[5] <- factor("Ov_F1_H")
+# testDGE$samples$group[7] <- factor("An_F1_H")
+# testDGE$samples$group[10] <- factor("An_F1_H")
+# testDGE$samples$group[12] <- factor("Le_F1_H")
+# testDGE$samples$group[14] <- factor("Ov_F1_C")
+# testDGE$samples$group[16] <- factor("An_F1_C")
+# testDGE$samples$group[22] <- factor("An_F1_C")
+# testDGE$samples$group[21] <- factor("Le_F1_C")
 
 ```
 
 
 ```{r}
-###Apply + keep step + colsums###
+###Apply + keep step + columns###
 apply(testDGE$counts, 2, sum)
 apply(dge.subset_anth$counts, 2, sum)
 apply(dge.subset_leaf$counts, 2, sum)
 apply(dge.subset_ovary$counts, 2, sum)
+apply(dge.subset_bud$counts, 2, sum)
+
 keep <- rowSums(cpm(testDGE)> 20) >= 2
 keep.anth <- rowSums(cpm(dge.subset_anth)> 20) >= 2
 keep.leaf <- rowSums(cpm(dge.subset_leaf)> 20) >= 2
 keep.ovary <- rowSums(cpm(dge.subset_ovary)> 20) >= 2
+keep.bud <- rowSums(cpm(dge.subset_bud)> 20) >= 2
+
 testDGE <- testDGE[keep,]
+
 dge.subset_anth <- dge.subset_anth[keep.anth,]
 dge.subset_leaf <- dge.subset_leaf[keep.leaf,]
 dge.subset_ovary <- dge.subset_ovary[keep.ovary,]
+dge.subset_bud <- dge.subset_bud[keep.bud,]
+
 testDGE$samples$lib.size <- colSums(testDGE$counts)
+
 dge.subset_anth$samples$lib.size <- colSums(dge.subset_anth$counts)
 dge.subset_leaf$samples$lib.size <- colSums(dge.subset_leaf$counts)
 dge.subset_ovary$samples$lib.size <- colSums(dge.subset_ovary$counts)
@@ -122,15 +104,19 @@ testDGE <-  calcNormFactors(testDGE)
 dge.subset_anth <- calcNormFactors(dge.subset_anth)
 dge.subset_leaf<- calcNormFactors(dge.subset_leaf)
 dge.subset_ovary <- calcNormFactors(dge.subset_ovary)
+dge.subset_bud <- calcNormFactors(dge.subset_bud)
 ```
 
 ```{r}
-### mds plots — Ren###
-plotMDS(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), label =testDGE$samples$group, dim.plot = c(1,3))
+### mds plots ###
+plotMDS.DGEList(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), dim.plot = c(1,2))
+
+#label = testDGE$samples$group
 ```
 
+
+
 ```{r}
-###Ren###
 plotMDS(dge.subset_anth, method="bcv", col=as.numeric(dge.subset_anth$samples$group), label =dge.subset_anth$samples$group, dim.plot = c(1,2))
 
 ```
