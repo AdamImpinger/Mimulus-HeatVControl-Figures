@@ -55,16 +55,7 @@ testDGE$samples$group[24] <- factor("Ov_F1_C")
 ```{r}
 ## legacy subsets --> finseth said not to do it this way, bc we lose power
 dge.subset_anth <- testDGE[,which(testDGE$samples$group == "An_F1_C" | testDGE$samples$group == "An_F1_H")]
-<<<<<<< HEAD
 
-# dge.subset_anth$samples$group[6] <- factor("An_F1_C")
-# dge.subset_anth$samples$group[4] <- factor("An_F1_H")
-# dge.subset_anth$samples$group[3] <- factor("An_F1_H")
-# dge.subset_anth$samples$group[8]<- factor("An_F1_C")
-#dge.subset_anth$samples$group[c(6,4,3,8)] <- factor(c("An_F1_C","An_F1_H","An_F1_H","An_F1_C"))
-
-=======
->>>>>>> cacfb19 (re-factored testDGEs)
 dge.subset_leaf <- testDGE[,which(testDGE$samples$group == "Le_F1_C" | testDGE$samples$group == "Le_F1_H")]
 dge.subset_ovary <- testDGE[,which(testDGE$samples$group == "Ov_F1_C" | testDGE$samples$group == "Ov_F1_H")]
 dge.subset_bud <- testDGE[,which(testDGE$samples$group == "Bu_F1_C" | testDGE$samples$group == "Bu_F1_H")]
