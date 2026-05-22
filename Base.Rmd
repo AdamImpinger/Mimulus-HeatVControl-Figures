@@ -7,7 +7,6 @@ output: html_document
 
 ```{r}
 #libraries
-
 library(pheatmap)
 library(RColorBrewer)
 library(gprofiler2)
@@ -24,6 +23,8 @@ library(gt)
 library(scales)
 library(vegan)
 library(vegan3d)
+#install.packages("scatterplot3d")
+library(scatterplot3d)
 #running with errors, did some sleuthing and it seems like this will still work, the openGL error this mentions is only relevent for creating big interactive graphs
 ```
 
@@ -110,8 +111,6 @@ plotMDS.DGEList(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), di
 ```
 
 ```{r}
-install.packages("scatterplot3d")
-library(scatterplot3d)
 alltissue.cpmMatrix <- cpm(testDGE, log = TRUE)
 sample_matrix <- t(alltissue.cpmMatrix)
 nmds_3d <- metaMDS(sample_matrix, distance = "bray", k = 3, trymax = 100)
@@ -120,15 +119,15 @@ nmds_3d$stress
 nmds_points <- as.data.frame(nmds_3d$points)
 colnames(nmds_points) <- c("NMDS1", "NMDS2", "NMDS3")
 
-# 2. Add your sample metadata (e.g., condition or batch)
-# Assuming you have a dataframe called 'metadata' with a column 'Group'
+## assuming you have a dataframe called 'metadata' with a column 'Group'
 nmds_points$SampleID <- rownames(nmds_points)
-nmds_points$Group <- Mimulus_Sample_Info$Treatment
+nmds_points$Group <- Mimulus_Sample_Info$Group
 
 colors <- c("lightskyblue1", "lightskyblue2", "lightskyblue3","lightskyblue4", "goldenrod1","goldenrod2", "goldenrod3","goldenrod4")
-colors <- colors[as.numeric(testDGE$samples$group)]
+#colors <- colors[as.numeric(testDGE$samples$group)]
+colors <- colors[as.factor(nmds_points$Group)]
 
-# Create static 3D plot
+# create static 3D plot
 sample.3d.plot <- scatterplot3d(x = nmds_points$NMDS1, 
               y = nmds_points$NMDS2, 
               z = nmds_points$NMDS3,
@@ -138,7 +137,13 @@ sample.3d.plot <- scatterplot3d(x = nmds_points$NMDS1,
               ylab = "NMDS2",
               zlab = "NMDS3",
               main = "3D NMDS Plot")
-
+## currently nonfunctional legend
+legend("center",
+       legend = levels(testDGE$samples$group),
+       col = colors, 
+       pch = 16, 
+       inset = 0.05, 
+       xpd = TRUE)
 ```
 
 
