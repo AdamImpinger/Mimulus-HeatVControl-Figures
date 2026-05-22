@@ -109,6 +109,8 @@ plotMDS.DGEList(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), di
 
 #label = testDGE$samples$group
 ```
+
+
 ```{r}
 alltissue.cpmMatrix <- cpm(testDGE, log = TRUE)
 sample_matrix <- t(alltissue.cpmMatrix)
@@ -130,6 +132,8 @@ colors <- c("lightskyblue1","goldenrod1","lightskyblue2","goldenrod2","lightskyb
 
 ##for some reason, this only works when this is stored as a new object, not as a modification to "colors"
 group_colors <- colors[as.numeric(as.factor(nmds_points$Group))]
+color_play <- as.factor(nmds_points$Group)
+legend_guide <- levels(color_play)
 
 # create static 3D plot
 sample.3d.plot <- scatterplot3d(x = nmds_points$NMDS1, 
@@ -164,7 +168,38 @@ plotMDS(dge.subset_ovary, method="bcv", col=as.numeric(dge.subset_ovary$samples$
 ```
 
 ```{r}
-#Building desgin
+#rebuilding design to use makeContrast filters
+group <- factor(c("An_F1_C","An_F1_H","Bu_F1_C","Bu_F1_H","Le_F1_C","Le_F1_H","Ov_F1_C","Ov_F1_H"))
+design.alltissue <-  model.matrix(~0+group, data = testDGE$samples)
+
+testDGE <- estimateDisp(testDGE,design.alltissue)
+testDGE <- calcNormFactors(testDGE)
+testDGE <- estimateDisp(testDGE, design.alltissue)
+colnames(design.alltissue) <- levels(testDGE$samples$group)
+view(design.alltissue)
+# bringing back these fro clarity of the components used to create these
+Mimulus_Sample_Info <- read_csv("Mimulus_Sample_Info.csv")
+mim_table <- read_table("all_counts3.out", col_names = TRUE)
+mimGroups <- Mimulus_Sample_Info$Group
+
+all.tissuecontrasts <- makeContrasts(HvsCanther=An_F1_H-An_F1_C, HvsCbud=Bu_F1_H-Bu_F1_C, HvsCovary=Ov_F1_H-Ov_F1_C, HvsCleaf=Bu_F1_H-Bu_F1_C, levels=design.alltissue)
+
+qlf.Anther <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCanther"])
+antherTags<- topTags(qlf.Anther)
+qlf.Bud <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCbud"])
+budTags <- topTags(qlf.Bud)
+qlf.ovary <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCovary"])
+ovaryTags <- topTags(qlf.ovary)
+qlf.leaf <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCleaf"])
+leafTags <- topTags(qlf.leaf)
+
+
+
+```
+
+
+```{r}
+#Building design — legacy, updated to use makeContrasts instead
 design <-  model.matrix(~0+group, data = testDGE$samples)
 design.anth <- model.matrix(~0+group, data = dge.subset_anth$samples)
 colnames(design.anth) <- levels(dge.subset_anth$samples$group)
@@ -183,7 +218,7 @@ dge.subset_anth <- estimateDisp(dge.subset_anth, design.anth)
 dge.subset_leaf <- estimateDisp(dge.subset_leaf, design.leaf)
 dge.subset_ovary <- estimateDisp(dge.subset_ovary, design.ovary)
 dge.subset_bud <- estimateDisp(dge.subset_bud, design.bud)
-testDGE <- estimateDisp(testDGE,design)
+
 ```
 
 ```{r}
@@ -218,32 +253,6 @@ is.de.ovary_hvc <- decideTests.DGEExact(et.ovary.hvc,p=0.05)
 is.de.bud_hvc <- decideTests.DGEExact(et.bud.hvc,p=0.05)
 ```
 
-```{r}
-## leaf heat map ##
-log.leaf <- cpm(dge.subset_leaf, log = TRUE, prior.count = 2)
-is.leaf.logcompHvC <- log.leaf[is.de.leaf_hvc != 0, ]
-
-pheatmap(is.leaf.logcompHvC, cluster_rows = TRUE, cutree_rows = 4)
-pheatmap(is.leaf.logcompHvC, cluster_rows = TRUE, cutree_rows = 4, scale ="row")
-```
-
-```{r}
-### ovary heat maps ###
-log.ovary <- cpm(dge.subset_ovary, log = TRUE, prior.count = 2)
-is.ovary.logcompHvC <- log.ovary[is.de.ovary_hvc != 0, ]
-
-pheatmap(is.ovary.logcompHvC, cluster_rows = TRUE, cutree_rows = 4)
-pheatmap(is.ovary.logcompHvC, cluster_rows = TRUE, cutree_rows = 4, scale ="row")
-```
-
-```{r}
-## anther heat maps ##
-log.anth <- cpm(dge.subset_anth, log = TRUE, prior.count = 2)
-is.anth.logcompHvC <- log.anth[is.de.anth_hvc != 0, ]
-
-pheatmap(is.anth.logcompHvC, cluster_rows = TRUE, cutree_rows = 4)
-pheatmap(is.anth.logcompHvC, cluster_rows = TRUE, cutree_rows = 4, scale ="row")
-```
 
 ```{r}
 ### venn diagram ###
