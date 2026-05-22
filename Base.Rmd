@@ -22,7 +22,7 @@ library(stringr)
 library(gt)
 library(scales)
 library(vegan)
-library(vegan3d)
+#library(vegan3d)
 #install.packages("scatterplot3d")
 library(scatterplot3d)
 #running with errors, did some sleuthing and it seems like this will still work, the openGL error this mentions is only relevent for creating big interactive graphs
@@ -330,7 +330,7 @@ leaf_up_num <- length(leaf.up$GENE)
 leaf_down_num <- length(leaf.down$GENE)
 
 x <- c(anth_up_num, anth_down_num, ov_up_num, ov_down_num, leaf_up_num, leaf_down_num) 
-n <- c(total_anther,total_anther, total_ovary,total_ovary,  total_leaf,total_leaf)
+n <- c(total_anther,total_anther, total_ovary, total_ovary, total_leaf, total_leaf)
 ov_up_num/total_ovary
 ov_down_num/total_ovary
 anth_up_num/total_anther
@@ -596,6 +596,40 @@ gib_gt <- giberellin_tbl |> gt() |>
 ```
 
 ```{r}
+## 5/22 venn diagrams
+anth.DE <- subset(qlf.Anther$genes$GENE, qlf.Anther$table$PValue < 5*10^-4)
+head(anth.DE)
+dim(anth.DE)
+
+bud.DE <- subset(qlf.Bud$genes$GENE, qlf.Bud$table$PValue < 5*10^-4)
+leaf.DE <- subset(qlf.leaf$genes$GENE, qlf.leaf$table$PValue < 5*10^-4)
+ovary.DE <- subset(qlf.ovary$genes$GENE, qlf.ovary$table$PValue < 5*10^-4)
+
+venn.diagram(
+  x = list(
+    anther = anth.DE,
+    ovary = ovary.DE,
+    leaf = leaf.DE,
+    bud = bud.DE
+    ),
+  filename = "VennDiagramTissueOverlap.png",
+  col = "transparent", 
+  fill = viridis(4),
+  alpha = 0.5,
+  label.col = "black",
+  cex = 1.5,
+  fontfamily = "Helvetica",
+  cat.fontfamily = "Helvetica",
+  fontface = "bold",
+  cat.default.pos = "text",
+  cat.col = c("black", "black", "black", "black"),
+  cat.cex = 2,
+  cat.dist = c(0.05, 0.05, 0.05, 0.05),
+  cat.pos = c(10, 10, 10, 10))
+```
+
+
+```{r}
 ###tissue overlap venn diagrams — ADAM###
 head(tbl.anth_hvc)
 anth.DE <- subset(tbl.anth_hvc, tbl.anth_hvc$FDR < 0.05)
@@ -603,7 +637,6 @@ head(anth.DE)
 
 ov.DE <- subset(tbl.ovary_hvc, tbl.ovary_hvc$FDR < 0.05)
 leaf.DE <- subset(tbl.leaf_hvc, tbl.leaf_hvc$FDR < 0.05)
-
 
 anth.up <- subset(anth.DE, anth.DE$logFC > 0)
 anth.down <- subset(anth.DE, anth.DE$logFC < 0)
