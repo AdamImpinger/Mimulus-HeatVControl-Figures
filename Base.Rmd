@@ -109,7 +109,6 @@ plotMDS.DGEList(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), di
 
 #label = testDGE$samples$group
 ```
-
 ```{r}
 alltissue.cpmMatrix <- cpm(testDGE, log = TRUE)
 sample_matrix <- t(alltissue.cpmMatrix)
@@ -118,28 +117,32 @@ nmds_3d$stress
 
 nmds_points <- as.data.frame(nmds_3d$points)
 colnames(nmds_points) <- c("NMDS1", "NMDS2", "NMDS3")
+```
 
+```{r}
 ## assuming you have a dataframe called 'metadata' with a column 'Group'
 nmds_points$SampleID <- rownames(nmds_points)
 nmds_points$Group <- Mimulus_Sample_Info$Group
 
-colors <- c("lightskyblue1", "lightskyblue2", "lightskyblue3","lightskyblue4", "goldenrod1","goldenrod2", "goldenrod3","goldenrod4")
-#colors <- colors[as.numeric(testDGE$samples$group)]
-colors <- colors[as.factor(nmds_points$Group)]
+#colors <- c("lightskyblue1", "lightskyblue2", "lightskyblue3","lightskyblue4", "goldenrod1","goldenrod2", "goldenrod3","goldenrod4")
+colors <- c("lightskyblue1","goldenrod1","lightskyblue2","goldenrod2","lightskyblue3","goldenrod3","lightskyblue4","goldenrod4")
+
+##for some reason, this only works when this is stored as a new object, not as a modification to "colors"
+group_colors <- colors[as.numeric(as.factor(nmds_points$Group))]
 
 # create static 3D plot
 sample.3d.plot <- scatterplot3d(x = nmds_points$NMDS1, 
               y = nmds_points$NMDS2, 
               z = nmds_points$NMDS3,
-              color = colors,
+              color = group_colors,
               pch = 19,
               xlab = "NMDS1",
               ylab = "NMDS2",
               zlab = "NMDS3",
               main = "3D NMDS Plot")
-## currently nonfunctional legend
+
 legend(x = 4, y = 7,
-       legend = levels(testDGE$samples$group),
+       legend = legend_guide,
        col = colors, 
        pch = 16, 
        inset = 0.05, 
