@@ -184,12 +184,14 @@ mimGroups <- Mimulus_Sample_Info$Group
 
 all.tissuecontrasts <- makeContrasts(HvsCanther=An_F1_H-An_F1_C, HvsCbud=Bu_F1_H-Bu_F1_C, HvsCovary=Ov_F1_H-Ov_F1_C, HvsCleaf=Bu_F1_H-Bu_F1_C, levels=design.alltissue)
 
+fit <- glmQLFit(testDGE, design.alltissue)
+
 qlf.Anther <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCanther"])
-antherTags<- topTags(qlf.Anther)
+antherTags<- topTags(qlf.Anther, n=100)
 qlf.Bud <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCbud"])
 budTags <- topTags(qlf.Bud)
 qlf.ovary <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCovary"])
-ovaryTags <- topTags(qlf.ovary)
+ovaryTags <- topTags(qlf.ovary, n=100)
 qlf.leaf <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCleaf"])
 leafTags <- topTags(qlf.leaf)
 
@@ -630,6 +632,7 @@ venn.diagram(
   cat.dist = c(0.05, 0.05, 0.05, 0.05),
   cat.pos = c(10, 10, 10, 10))
 ```
+
 ```{r}
 common_all_horomones <- Reduce(intersect, list(anther, ovary, leaf,canidate.genes.compiled))
 ```
