@@ -138,7 +138,7 @@ sample.3d.plot <- scatterplot3d(x = nmds_points$NMDS1,
               zlab = "NMDS3",
               main = "3D NMDS Plot")
 ## currently nonfunctional legend
-legend("center",
+legend(x = 4, y = 7,
        legend = levels(testDGE$samples$group),
        col = colors, 
        pch = 16, 
