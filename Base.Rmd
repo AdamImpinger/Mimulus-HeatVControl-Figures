@@ -122,7 +122,8 @@ colnames(nmds_points) <- c("NMDS1", "NMDS2", "NMDS3")
 ```{r}
 ## assuming you have a dataframe called 'metadata' with a column 'Group'
 nmds_points$SampleID <- rownames(nmds_points)
-nmds_points$Group <- Mimulus_Sample_Info$Group
+#nmds_points$Group <- Mimulus_Sample_Info$Group
+nmds_points$Group <- testDGE$samples$group
 
 #colors <- c("lightskyblue1", "lightskyblue2", "lightskyblue3","lightskyblue4", "goldenrod1","goldenrod2", "goldenrod3","goldenrod4")
 colors <- c("lightskyblue1","goldenrod1","lightskyblue2","goldenrod2","lightskyblue3","goldenrod3","lightskyblue4","goldenrod4")
@@ -140,7 +141,6 @@ sample.3d.plot <- scatterplot3d(x = nmds_points$NMDS1,
               ylab = "NMDS2",
               zlab = "NMDS3",
               main = "3D NMDS Plot")
-
 legend(x = 4, y = 7,
        legend = legend_guide,
        col = colors, 
