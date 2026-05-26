@@ -224,7 +224,7 @@ dge.subset_bud <- estimateDisp(dge.subset_bud, design.bud)
 ```
 
 ```{r}
-### creating dge alias to run exact test ###
+### LEgacy <- creating dge alias to run exact test ###
 etTestDGE <- testDGE
 etTestDGE$samples$condition <- ifelse(grepl("_H$", etTestDGE$samples$group), "H", "C")
 etTestDGE$samples$condition <- factor(etTestDGE$samples$condition)
@@ -236,7 +236,7 @@ results <- topTags(et, n = Inf)$table
 ```
 
 ```{r}
-###et for the rest of tissue groups and isolating/filtering for top tags###
+###Legacy <- et for the rest of tissue groups and isolating/filtering for top tags###
 et.anth.hvc <- exactTest(dge.subset_anth, pair = c("An_F1_C","An_F1_H"))
 et.leaf.hvc <- exactTest(dge.subset_leaf, pair = c("Le_F1_C", "Le_F1_H"))
 et.ovary.hvc <- exactTest(dge.subset_ovary, pair = c ("Ov_F1_C", "Ov_F1_H"))
@@ -248,7 +248,7 @@ tbl.leaf_hvc <- topTags(et.leaf.hvc,n=nrow(et.leaf.hvc))$table
 tbl.ovary_hvc <- topTags(et.ovary.hvc, n=nrow(et.ovary.hvc))$table
 tbl.bud_hvc <- topTags(et.bud.hvc, n=nrow(et.bud.hvc))$table
 
-#final tables of all differentially expressed genes
+#Legacy <- final tables of all differentially expressed genes
 is.de.leaf_hvc <-  decideTests.DGEExact(et.leaf.hvc,p=0.05)
 is.de.anth_hvc <-  decideTests.DGEExact(et.anth.hvc,p=0.05)
 is.de.ovary_hvc <- decideTests.DGEExact(et.ovary.hvc,p=0.05)
@@ -307,43 +307,53 @@ write.csv(common_all, "common_all_genes.csv", row.names = FALSE)
 
 ```{r}
 ###Barplot + pairwise — Simran ###
+qlf.Anther$coefficients
 
-total_anther <- length(tbl.anth_hvc$GENE)
-total_ovary <- length(tbl.ovary_hvc$GENE)
-total_leaf <- length(tbl.leaf_hvc$GENE)
 
-anth.up <- subset(anth.DE, anth.DE$logFC > 0)
-anth.down <- subset(anth.DE, anth.DE$logFC < 0)
+total_anther <- length(qlf.Anther$genes$GENE)
+total_ovary <- length(qlf.ovary$genes$GENE)
+total_leaf <- length(qlf.leaf$genes$GENE)
+total_bud <- length(qlf.Bud$genes$GENE)
+
+anth.up <- subset(qlf.Anther$genes, qlf.Anther$table$logFC > 2)
+anth.down <- subset(qlf.Anther$genes, qlf.Anther$table$logFC < -2)
 anth_up_num <- length(anth.up$GENE)
 anth_down_num <- length(anth.down$GENE)
 
 
-ov.up <- subset(ov.DE, ov.DE$logFC > 0)
-ov.down <- subset(ov.DE, ov.DE$logFC < 0)
+ov.up <- subset(qlf.ovary$genes, qlf.ovary$table$logFC > 2)
+ov.down <- subset(qlf.ovary$genes, qlf.ovary$table$logFC< -2)
 ov_up_num <- length(ov.up$GENE)
 ov_down_num <- length(ov.down$GENE)
 
 
-leaf.up <- subset(leaf.DE, leaf.DE$logFC > 0)
-leaf.down <- subset(leaf.DE, leaf.DE$logFC < 0)
+leaf.up <- subset(qlf.leaf$genes, qlf.leaf$table$logFC > 2)
+leaf.down <- subset(qlf.leaf$genes, qlf.leaf$table$logFC < -2)
 leaf_up_num <- length(leaf.up$GENE)
 leaf_down_num <- length(leaf.down$GENE)
 
-x <- c(anth_up_num, anth_down_num, ov_up_num, ov_down_num, leaf_up_num, leaf_down_num) 
-n <- c(total_anther,total_anther, total_ovary, total_ovary, total_leaf, total_leaf)
+bud.up <- subset(qlf.Bud$genes, qlf.Bud$table$logFC > 2)
+bud.down <- subset(qlf.Bud$genes, qlf.Bud$table$logFC < -2)
+bud_up_num <- length(bud.up$GENE)
+bud_down_num <- length(bud.down$GENE)
+
+x <- c(anth_up_num, anth_down_num, ov_up_num, ov_down_num, leaf_up_num, leaf_down_num, bud_up_num, bud_down_num) 
+n <- c(total_anther, total_anther, total_ovary, total_ovary,  total_leaf, total_leaf, total_bud, total_bud)
 ov_up_num/total_ovary
 ov_down_num/total_ovary
 anth_up_num/total_anther
 anth_down_num/total_anther
 leaf_up_num/total_leaf
 leaf_down_num/total_leaf
+bud_up_num/total_bud
+bud_down_num/total_bud
 
 pairwise.prop.test(x, n)
 
-part <- c("Leaf", "Leaf", "Anther", "Anther", "Ovary", "Ovary")
-up_down <- c("Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated")
-values <- c(leaf_up_num/total_leaf, leaf_down_num/total_leaf, anth_up_num/total_anther, anth_down_num/total_anther, ov_up_num/total_ovary, ov_down_num/total_ovary)
-part <- factor(part, levels = c("Leaf", "Anther", "Ovary"))
+part <- c("Leaf", "Leaf", "Anther", "Anther", "Ovary", "Ovary", "Bud", "Bud")
+up_down <- c("Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated")
+values <- c(leaf_up_num/total_leaf, leaf_down_num/total_leaf, anth_up_num/total_anther, anth_down_num/total_anther, ov_up_num/total_ovary, ov_down_num/total_ovary, bud_up_num/total_bud, bud_down_num/total_bud)
+part <- factor(part, levels = c("Leaf", "Anther", "Ovary", "Bud"))
 
 df <- data.frame(
   part = part,
