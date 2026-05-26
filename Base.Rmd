@@ -173,7 +173,7 @@ plotMDS(dge.subset_ovary, method="bcv", col=as.numeric(dge.subset_ovary$samples$
 #rebuilding design to use makeContrast filters
 group <- factor(c("An_F1_C","An_F1_H","Bu_F1_C","Bu_F1_H","Le_F1_C","Le_F1_H","Ov_F1_C","Ov_F1_H"))
 design.alltissue <-  model.matrix(~0+group, data = testDGE$samples)
-
+design.alltissue
 testDGE <- estimateDisp(testDGE,design.alltissue)
 testDGE <- calcNormFactors(testDGE)
 testDGE <- estimateDisp(testDGE, design.alltissue)
@@ -185,7 +185,7 @@ Mimulus_Sample_Info <- read_csv("Mimulus_Sample_Info.csv")
 mim_table <- read_table("all_counts3.out", col_names = TRUE)
 mimGroups <- Mimulus_Sample_Info$Group
 
-all.tissuecontrasts <- makeContrasts(HvsCanther=An_F1_H-An_F1_C, HvsCbud=Bu_F1_H-Bu_F1_C, HvsCovary=Ov_F1_H-Ov_F1_C, HvsCleaf=Bu_F1_H-Bu_F1_C, levels=design.alltissue)
+all.tissuecontrasts <- makeContrasts(HvsCanther=An_F1_H-An_F1_C, HvsCbud=Bu_F1_H-Bu_F1_C, HvsCovary=Ov_F1_H-Ov_F1_C, HvsCleaf=Le_F1_H-Le_F1_C, levels=design.alltissue)
 
 fit <- glmQLFit(testDGE, design.alltissue)
 
@@ -606,7 +606,7 @@ gib_gt <- giberellin_tbl |> gt() |>
 ```
 
 ```{r}
-## all tissue venn diagrams
+## all tissue venn diagrams, updated correct now
 anth.DE <- subset(antherTags$table$GENE, antherTags$table$FDR < 0.05)
 bud.DE <- subset(budTags$table$GENE, budTags$table$FDR < 0.05)
 leaf.DE <- subset(leafTags$table$GENE, leafTags$table$FDR < 0.05)
