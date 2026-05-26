@@ -315,25 +315,25 @@ total_ovary <- length(qlf.ovary$genes$GENE)
 total_leaf <- length(qlf.leaf$genes$GENE)
 total_bud <- length(qlf.Bud$genes$GENE)
 
-anth.up <- subset(qlf.Anther$genes, qlf.Anther$table$logFC > 0)
-anth.down <- subset(qlf.Anther$genes, qlf.Anther$table$logFC < 0)
+anth.up <- subset(qlf.Anther$genes, qlf.Anther$table$logFC > 2)
+anth.down <- subset(qlf.Anther$genes, qlf.Anther$table$logFC < -2)
 anth_up_num <- length(anth.up$GENE)
 anth_down_num <- length(anth.down$GENE)
 
 
-ov.up <- subset(qlf.ovary$genes, qlf.ovary$table$logFC > 0)
-ov.down <- subset(qlf.ovary$genes, qlf.ovary$table$logFC< 0)
+ov.up <- subset(qlf.ovary$genes, qlf.ovary$table$logFC > 2)
+ov.down <- subset(qlf.ovary$genes, qlf.ovary$table$logFC< -2)
 ov_up_num <- length(ov.up$GENE)
 ov_down_num <- length(ov.down$GENE)
 
 
-leaf.up <- subset(qlf.leaf$genes, qlf.leaf$table$logFC > 0)
-leaf.down <- subset(qlf.leaf$genes, qlf.leaf$table$logFC < 0)
+leaf.up <- subset(qlf.leaf$genes, qlf.leaf$table$logFC > 2)
+leaf.down <- subset(qlf.leaf$genes, qlf.leaf$table$logFC < -2)
 leaf_up_num <- length(leaf.up$GENE)
 leaf_down_num <- length(leaf.down$GENE)
 
-bud.up <- subset(qlf.Bud$genes, qlf.Bud$table$logFC > 0)
-bud.down <- subset(qlf.Bud$genes, qlf.Bud$table$logFC < 0)
+bud.up <- subset(qlf.Bud$genes, qlf.Bud$table$logFC > 2)
+bud.down <- subset(qlf.Bud$genes, qlf.Bud$table$logFC < -2)
 bud_up_num <- length(bud.up$GENE)
 bud_down_num <- length(bud.down$GENE)
 
