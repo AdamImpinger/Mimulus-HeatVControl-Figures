@@ -612,6 +612,7 @@ bud.DE <- subset(budTags$table$GENE, budTags$table$FDR < 0.05)
 leaf.DE <- subset(leafTags$table$GENE, leafTags$table$FDR < 0.05)
 ovary.DE <- subset(ovaryTags$table$GENE, ovaryTags$table$FDR < 0.05)
 
+## nonproportional venn diagrams
 venn.diagram(
   x = list(
     anther = anth.DE,
@@ -633,7 +634,19 @@ venn.diagram(
   cat.cex = 2,
   cat.dist = c(0.05, 0.05, 0.05, 0.05),
   cat.pos = c(10, 10, 10, 10))
+
+##euler venn diagram (proportional circle sizes)
+allTissueLists <- list(
+  anther = anth.DE,
+  ovary = ovary.DE,
+  leaf = leaf.DE,
+  bud = bud.DE
+)
+
+fit.allTissue <- euler(allTissueLists)
+plot(fit.allTissue, quantities = TRUE)
 ```
+
 
 
 ```{r}
