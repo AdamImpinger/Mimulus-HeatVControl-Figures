@@ -644,7 +644,7 @@ allTissueLists <- list(
 )
 
 fit.allTissue <- euler(allTissueLists)
-plot(fit.allTissue, quantities = TRUE)
+plot(fit.allTissue, quantities = TRUE, fills = list(fill = plasma(4)), alpha = .6)
 ```
 
 
