@@ -25,6 +25,8 @@ library(vegan)
 #library(vegan3d)
 #install.packages("scatterplot3d")
 library(scatterplot3d)
+#install.packages("eulerr")
+library(eulerr)
 #running with errors, did some sleuthing and it seems like this will still work, the openGL error this mentions is only relevent for creating big interactive graphs
 ```
 
@@ -177,7 +179,8 @@ testDGE <- calcNormFactors(testDGE)
 testDGE <- estimateDisp(testDGE, design.alltissue)
 colnames(design.alltissue) <- levels(testDGE$samples$group)
 view(design.alltissue)
-# bringing back these fro clarity of the components used to create these
+
+# bringing back these for clarity of the components used to create these
 Mimulus_Sample_Info <- read_csv("Mimulus_Sample_Info.csv")
 mim_table <- read_table("all_counts3.out", col_names = TRUE)
 mimGroups <- Mimulus_Sample_Info$Group
@@ -187,16 +190,13 @@ all.tissuecontrasts <- makeContrasts(HvsCanther=An_F1_H-An_F1_C, HvsCbud=Bu_F1_H
 fit <- glmQLFit(testDGE, design.alltissue)
 
 qlf.Anther <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCanther"])
-antherTags<- topTags(qlf.Anther, n=100)
+antherTags<- topTags(qlf.Anther, n = Inf, adjust.method = "BH")
 qlf.Bud <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCbud"])
-budTags <- topTags(qlf.Bud)
+budTags <- topTags(qlf.Bud, n = Inf, adjust.method = "BH")
 qlf.ovary <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCovary"])
-ovaryTags <- topTags(qlf.ovary, n=100)
+ovaryTags <- topTags(qlf.ovary, n = Inf, adjust.method = "BH")
 qlf.leaf <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCleaf"])
-leafTags <- topTags(qlf.leaf)
-
-
-
+leafTags <- topTags(qlf.leaf, n = Inf, adjust.method = "BH")
 ```
 
 
@@ -596,14 +596,11 @@ gib_gt <- giberellin_tbl |> gt() |>
 ```
 
 ```{r}
-## 5/22 venn diagrams
-anth.DE <- subset(qlf.Anther$genes$GENE, qlf.Anther$table$PValue < 5*10^-4)
-head(anth.DE)
-dim(anth.DE)
-
-bud.DE <- subset(qlf.Bud$genes$GENE, qlf.Bud$table$PValue < 5*10^-4)
-leaf.DE <- subset(qlf.leaf$genes$GENE, qlf.leaf$table$PValue < 5*10^-4)
-ovary.DE <- subset(qlf.ovary$genes$GENE, qlf.ovary$table$PValue < 5*10^-4)
+## all tissue venn diagrams
+anth.DE <- subset(antherTags$table$GENE, antherTags$table$FDR < 0.05)
+bud.DE <- subset(budTags$table$GENE, budTags$table$FDR < 0.05)
+leaf.DE <- subset(leafTags$table$GENE, leafTags$table$FDR < 0.05)
+ovary.DE <- subset(ovaryTags$table$GENE, ovaryTags$table$FDR < 0.05)
 
 venn.diagram(
   x = list(
