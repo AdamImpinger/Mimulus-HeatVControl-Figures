@@ -306,7 +306,7 @@ write.csv(common_all, "common_all_genes.csv", row.names = FALSE)
 
 
 ```{r}
-###Barplot + pairwise — Simran ###
+###Barplot + pairwise  ###
 qlf.Anther$coefficients
 
 
@@ -373,252 +373,22 @@ ggplot(df, aes(x = part, y = values, fill = up_down)) +
   theme_minimal()
 ```
 
-```{r}
-### candidate selection ####
-#reformatting that extracted list, preparing for intersect
-auxin.canidate <- read_tsv("auxin_candidate_genes.tsv")
 
-absciscis_acid <- read_tsv("abscisic_acid_candidate_genes.tsv")
-ethylene <- read_tsv("keyword_results.this.gridOptions.context.tsv")
-jasmonic_canidate <- read_tsv("jasmonic_candidate_genes.tsv")
-salicylic_canidate <- read_tsv("salicylic_candidate_genes.tsv")
-brassinosteriod <- read_tsv("brassinosteroid_candidate_genes.tsv")
-cytokinin <- read_tsv("cytokinin_candidate_genes.tsv")
-giberellin <- read_tsv("giberellin_candidate_genes.tsv")
-library(stringr)
-ethylene.masterlist <- ethylene$Description |>
-  str_remove(" - \\(1.*") |>
-  str_c(".v3.1")|> 
-  str_remove(" ")
-absiciscis.masterlist <- absciscis_acid$Description |>
-  str_remove(" - \\(1.*") |>
-  str_c(".v3.1")|> 
-  str_remove(" ")
-auxin.masterlist <- auxin.canidate$Description |> 
-  str_remove(" - \\(1.*") |>
-  str_c(".v3.1")|> 
-  str_remove(" ")
-jasmonic.masterlist <- jasmonic_canidate$Description |> 
-  str_remove(" - \\(1.*") |>
-  str_c(".v3.1") |> 
-  str_remove(" ")
-salsalicylic.masterlist <- salicylic_canidate$Description |> 
-  str_remove(" - \\(1.*") |>
-  str_c(".v3.1") |> 
-  str_remove(" ")
-brassinosteriod.masterlist <- brassinosteriod$Description |> 
-  str_remove(" - \\(1.*") |>
-  str_c(".v3.1") |> 
-  str_remove(" ")
-cytokinin.masterlit <- cytokinin$Description |> 
-  str_remove(" - \\(1.*") |>
-  str_c(".v3.1") |> 
-  str_remove(" ")
-giberellin.masterlit <- giberellin$Description |> 
-  str_remove(" - \\(1.*") |>
-  str_c(".v3.1") |> 
-  str_remove(" ")
-```
-
-```{r}
-###candidate formation ###
-length(testDGE$genes$GENE)
-testDGE
-ethylene_overlap <- intersect(ethylene.masterlist, all.DGE$GENE)
-absciscis_overlap <- intersect(absiciscis.masterlist, all.DGE$GENE)
-auxin_overlap <- intersect(auxin.masterlist, all.DGE$GENE)
-jasmonic_overlap <-  intersect(jasmonic.masterlist, all.DGE$GENE)
-salsalicylic_overlap <-  intersect(salsalicylic.masterlist, all.DGE$GENE)
-brassinosteriod_overlap<- intersect(brassinosteriod.masterlist, all.DGE$GENE)
-cytokinin_overlap <-  intersect(cytokinin.masterlit, all.DGE$GENE)
-giberellin_overlap <-  intersect(giberellin.masterlit, all.DGE$GENE)
-```
-
-```{r}
-###tables — Adam###
-ethylene_tbl <- all.DGE |> 
-  dplyr::filter(GENE %in% ethylene.masterlist,
-    PValue < 0.05,
-    abs(logFC) > 1
-  )
-
-absciscis_tbl <- all.DGE |> 
-  dplyr::filter(GENE %in% absiciscis.masterlist,
-    PValue < 0.05
-  )
-
-auxin_tbl <- all.DGE |> 
-  dplyr::filter(GENE %in% auxin.masterlist,
-    PValue < 0.05
-  )
-
-jasmonic_tbl <- all.DGE |> 
-  dplyr::filter(GENE %in% jasmonic.masterlist,
-    PValue < 0.05,
-    abs(logFC) > 1
-  )
-
-salsaliyc_tbl <- all.DGE |> 
-  dplyr::filter(GENE %in% salsalicylic.masterlist,
-    PValue < 0.05,
-    abs(logFC) > 1
-  )
-brassinosteriod_tbl <- all.DGE |> 
-  dplyr::filter(GENE %in% brassinosteriod.masterlist,
-    PValue < 0.05,
-    abs(logFC) > 1
-  )
-
-cytokinin_tbl <- all.DGE |> 
-  dplyr::filter(GENE %in% cytokinin.masterlit,
-    PValue < 0.05,
-    abs(logFC) > 1
-  )
-giberellin_tbl <- all.DGE |> 
-  dplyr::filter(GENE %in% giberellin.masterlit,
-    PValue < 0.05,
-    abs(logFC) > 1
-  )
-
-anther_tbl <- all.DGE |> 
-   dplyr::filter(GENE %in% anth.DE$GENE,
-    PValue < 0.05,
-    abs(logFC) > 1
-  ) 
-
-leaf_tbl <- all.DGE |> 
-   dplyr::filter(GENE %in% leaf.DE$GENE,
-    PValue < 0.05,
-    abs(logFC) > 1
-  ) 
-
-ovary_tbl <- all.DGE |> 
-  dplyr::filter(GENE %in% leaf.DE$GENE,
-    PValue < 0.05,
-    abs(logFC) > 1
-  ) 
-
-
-anther_gt <- anther_tbl |> 
-  gt() |>
-  data_color(
-    columns = logFC,
-    fn = col_numeric(
-      palette = c("blue", "white", "red"),
-      domain = c(min(anther_tbl$logFC), max(anther_tbl$logFC))
-    ) 
-  )
-ovary_gt <- ovary_tbl |> 
-  gt() |> 
-  data_color(
-    columns = logFC,
-    fn = col_numeric(
-      palette = c("blue", "white", "red"),
-      domain = c(min(ovary_tbl$logFC), max(ovary_tbl$logFC))))
-
-leaf_gt <- leaf_tbl |> 
-  gt() |> 
-    data_color(
-    columns = logFC,
-    fn = col_numeric(
-      palette = c("blue", "white", "red"),
-      domain = c(min(leaf_tbl$logFC), max(leaf_tbl$logFC))))
-ethylene_gt <- ethylene_tbl |>
-  gt() |>
-  data_color(
-    columns = logFC,
-    fn = col_numeric(
-      palette = c("blue", "white", "red"),
-      domain = c(min(ethylene_tbl$logFC), max(ethylene_tbl$logFC))
-    ) 
-  )
-
-absciscis_gt <- absciscis_tbl |> 
-  gt() |>
-  data_color(
-    columns = logFC,
-    fn = col_numeric(
-      palette = c("blue", "white", "red"),
-      domain = c(min(absciscis_tbl$logFC), max(absciscis_tbl$logFC))
-    ) 
-  )
-
-auxin_gt <- auxin_tbl |> 
-  gt() |>
-  data_color(
-    columns = logFC,
-    fn = col_numeric(
-      palette = c("blue", "white", "red"),
-      domain = c(min(auxin_tbl$logFC), max(auxin_tbl$logFC))
-    ) 
-  )
-
-jasmonic_gt <- jasmonic_tbl |> 
-  gt() |>
-  data_color(
-    columns = logFC,
-    fn = col_numeric(
-      palette = c("blue", "white", "red"),
-      domain = c(min(jasmonic_tbl$logFC), max(jasmonic_tbl$logFC))
-    ) 
-  )
-DGE_tbl <- all.DGE |> 
-    filter(PValue < 0.05) |> 
-    filter(abs(logFC) > 1
-  )
-
-dge_gt <- DGE_tbl |> 
-  gt() |> 
-  data_color(
-    columns= logFC,
-    fn = col_numeric(
-      palette = c("blue", "white", "red"),
-      domain = c(min(all.DGE$logFC), max(all.DGE$logFC))
-    )
-  )
-
- brass_gt <- brassinosteriod_tbl |> gt() |>
-  data_color(
-    columns = logFC,
-    fn = col_numeric(
-      palette = c("blue", "white", "red"),
-      domain = c(min(brassinosteriod_tbl$logFC), max(brassinosteriod_tbl$logFC))
-    ) 
-  )
- 
- cytokinin_gt <- cytokinin_tbl |> gt() |>
-  data_color(
-    columns = logFC,
-    fn = col_numeric(
-      palette = c("blue", "white", "red"),
-      domain = c(min(cytokinin_tbl$logFC), max(cytokinin_tbl$logFC))
-    ) 
-  )
- 
-gib_gt <- giberellin_tbl |> gt() |>
-  data_color(
-    columns = logFC,
-    fn = col_numeric(
-      palette = c("blue", "white", "red"),
-      domain = c(min(giberellin_tbl$logFC), max(giberellin_tbl$logFC))
-    ) 
-  )
-```
 
 ```{r}
 ## all tissue venn diagrams, updated correct now
-anth.DE <- subset(antherTags$table$GENE, antherTags$table$FDR < 0.05)
-bud.DE <- subset(budTags$table$GENE, budTags$table$FDR < 0.05)
-leaf.DE <- subset(leafTags$table$GENE, leafTags$table$FDR < 0.05)
-ovary.DE <- subset(ovaryTags$table$GENE, ovaryTags$table$FDR < 0.05)
+anth.venn <- subset(antherTags$table$GENE, antherTags$table$FDR < 0.05)
+bud.venn <- subset(budTags$table$GENE, budTags$table$FDR < 0.05)
+leaf.venn <- subset(leafTags$table$GENE, leafTags$table$FDR < 0.05)
+ovary.venn <- subset(ovaryTags$table$GENE, ovaryTags$table$FDR < 0.05)
 
 ## nonproportional venn diagrams
 venn.diagram(
   x = list(
-    anther = anth.DE,
-    ovary = ovary.DE,
-    leaf = leaf.DE,
-    bud = bud.DE
+    anther = anth.venn,
+    ovary = ovary.venn,
+    leaf = leaf.venn,
+    bud = bud.venn
     ),
   filename = "VennDiagramTissueOverlap.png",
   col = "transparent", 
@@ -637,14 +407,22 @@ venn.diagram(
 
 ##euler venn diagram (proportional circle sizes)
 allTissueLists <- list(
-  anther = anth.DE,
-  ovary = ovary.DE,
-  leaf = leaf.DE,
-  bud = bud.DE
+  anther = anth.venn,
+    leaf = leaf.venn,
+    bud = bud.venn,
+  ovary = ovary.venn
 )
 
-fit.allTissue <- euler(allTissueLists)
-plot(fit.allTissue, quantities = TRUE, fills = list(fill = plasma(4)), alpha = .6)
+fit.allTissue <- euler(allTissueLists, 
+             shape = "ellipse", 
+             control = list(extra_loops = 50, maxeval = 2000))
+
+#fit.allTissue <- euler(allTissueLists)
+summary(fit.allTissue)
+pleasework <- plot(fit.allTissue, rotate = "45", quantities = TRUE, fills = list(fill = plasma(4)), alpha = .6,)
+pleasework
+
+
 ```
 
 
@@ -686,7 +464,4 @@ venn.diagram(
   cat.pos = c(10, 10, 10, 10))
 ```
 
-```{r}
-common_all_horomones <- Reduce(intersect, list(anther, ovary, leaf,canidate.genes.compiled))
-```
 
