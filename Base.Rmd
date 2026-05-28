@@ -22,10 +22,8 @@ library(stringr)
 library(gt)
 library(scales)
 library(vegan)
-#library(vegan3d)
-#install.packages("scatterplot3d")
+library(vegan3d)
 library(scatterplot3d)
-#install.packages("eulerr")
 library(eulerr)
 #running with errors, did some sleuthing and it seems like this will still work, the openGL error this mentions is only relevent for creating big interactive graphs
 ```
@@ -417,64 +415,60 @@ fit.allTissue <- euler(allTissueLists,
              shape = "ellipse", 
              control = list(extra_loops = 50, maxeval = 2000))
 
-#fit.allTissue <- euler(allTissueLists)
 summary(fit.allTissue)
-pleasework <- plot(fit.allTissue, rotate = "45", quantities = TRUE, fills = list(fill = plasma(4)), alpha = .6,)
-pleasework
+
+grid.newpage()
+pushViewport(viewport(width = 1.5, height = 1.5))
+
+euler.colorlist <- c("#fde725", "#28ae80", "#375b8d", "#440154")
+
+ plot(fit.allTissue, quantities = TRUE, fills = (fill = euler.colorlist), labels = TRUE, alpha = .7,)
+
+
+ plot(fit.allTissue, quantities = TRUE, fills = (fill = euler.colorlist), labels = FALSE, alpha = .7,)
 
 
 ```
 
 
 
-```{r}
-###tissue overlap venn diagrams — ADAM###
-head(tbl.anth_hvc)
-anth.DE <- subset(tbl.anth_hvc, tbl.anth_hvc$FDR < 0.05)
-head(anth.DE)
-
-ov.DE <- subset(tbl.ovary_hvc, tbl.ovary_hvc$FDR < 0.05)
-leaf.DE <- subset(tbl.leaf_hvc, tbl.leaf_hvc$FDR < 0.05)
-
-anth.up <- subset(anth.DE, anth.DE$logFC > 0)
-anth.down <- subset(anth.DE, anth.DE$logFC < 0)
-
-canidate.genes.compiled <-  c(auxin.masterlist,jasmonic.masterlist,salsalicylic.masterlist,ethylene.masterlist)
-
-venn.diagram(
-  x = list(
-    anther = anth.DE$GENE,
-    ovary = ov.DE$GENE,
-    leaf = leaf.DE$GENE,
-    candidates= canidate.genes.compiled
-  ),
-  filename = "VennDiagramTissueOverlap.png",
-  col = "transparent", 
-  fill = viridis(4),
-  alpha = 0.5,
-  label.col = "black",   # <-- FIXED
-  cex = 1.5,
-  fontfamily = "Helvetica",
-  cat.fontfamily = "Helvetica",
-  fontface = "bold",
-  cat.default.pos = "text",
-  cat.col = c("black", "black", "black", "black"),
-  cat.cex = 2,
-  cat.dist = c(0.05, 0.05, 0.05, 0.05),
-  cat.pos = c(10, 10, 10, 10))
-```
 
 ```{r}
-## matching top half "out" genes to DGE list
-chr11GenesTopOut <- read.csv("TableS6_genes_CHR11_v4 - top half out.csv", header = T, sep = ",")
-chr11GenesIM64v2 <- chr11GenesTopOut |> filter(IM62v4 != "x")
+## matching tissue specific diferentialy expressed genes with loci of interest chromosome 11
+chr11GenesBase <- read.csv("TableS6_genes_CHR11_v4.csv", header = T, sep = ",")
+chr11GenesIM62v4 <- chr11GenesBase |> filter(IM62v4 != "x")
 
-antherDGEs <- antherTags$table$GENE |> 
-  str_remove(".v3.1") |>
-  str_remove(" ")
+#normalizes format to facilitate joining
+antherDEGs.mapping <- as_tibble(antherTags$table) 
+antherDEGs.mapping <- antherDEGs.mapping |> 
+  mutate(GENE= str_remove(GENE,".v3.1")) |> 
+  mutate(GENE= str_remove(GENE," "))
 
-chr11AntherDGEs <- antherDGEs |> filter(IM62v4 == "11G")
+#inner join was a success story!
+chr11AntherOverlap <- inner_join(chr11GenesIM62v4, antherDEGs.mapping, by = join_by(IM62v4 == GENE))
 
-chr11AntherOverlap <- intersect(chr11GenesIM64v2$IM62v4, antherDGEs)
+budDEGs.mapping <- as_tibble(budTags$table)
+budDEGs.mapping <- budDEGs.mapping |> 
+  mutate(GENE= str_remove(GENE,".v3.1")) |> 
+  mutate(GENE= str_remove(GENE," "))
+chr11BudOverlap <- inner_join(chr11GenesIM62v4, budDEGs.mapping, by = join_by(IM62v4 == GENE))
+
+ovaryDEGs.mapping <- as_tibble(ovaryTags$table)
+ovaryDEGs.mapping <- ovaryDEGs.mapping |> 
+  mutate(GENE= str_remove(GENE,".v3.1")) |> 
+  mutate(GENE= str_remove(GENE," "))
+chr11OvaryOverlap <- inner_join(chr11GenesIM62v4, ovaryDEGs.mapping, by = join_by(IM62v4 == GENE))
+  
+leafDEGs.mapping <- as_tibble(leafTags$table)
+leafDEGs.mapping <-  leafDEGs.mapping |> 
+  mutate(GENE= str_remove(GENE,".v3.1")) |> 
+  mutate(GENE= str_remove(GENE," "))
+
+chr11LeafOverlap <- inner_join(chr11GenesIM62v4, leafDEGs.mapping, by = join_by(IM62v4 == GENE))
+
+
+
+
+
 ```
 
