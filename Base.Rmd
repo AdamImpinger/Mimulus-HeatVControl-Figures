@@ -464,4 +464,17 @@ venn.diagram(
   cat.pos = c(10, 10, 10, 10))
 ```
 
+```{r}
+## matching top half "out" genes to DGE list
+chr11GenesTopOut <- read.csv("TableS6_genes_CHR11_v4 - top half out.csv", header = T, sep = ",")
+chr11GenesIM64v2 <- chr11GenesTopOut |> filter(IM62v4 != "x")
+
+antherDGEs <- antherTags$table$GENE |> 
+  str_remove(".v3.1") |>
+  str_remove(" ")
+
+chr11AntherDGEs <- antherDGEs |> filter(IM62v4 == "11G")
+
+chr11AntherOverlap <- intersect(chr11GenesIM64v2$IM62v4, antherDGEs)
+```
 
