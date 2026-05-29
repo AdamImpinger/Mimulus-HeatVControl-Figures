@@ -22,7 +22,7 @@ library(stringr)
 library(gt)
 library(scales)
 library(vegan)
-library(vegan3d)
+#library(vegan3d)
 library(scatterplot3d)
 library(eulerr)
 #running with errors, did some sleuthing and it seems like this will still work, the openGL error this mentions is only relevent for creating big interactive graphs
@@ -189,7 +189,7 @@ fit <- glmQLFit(testDGE, design.alltissue)
 
 qlf.overall <- glmQLFTest( fit, contrast= all.tissuecontrasts)
 overallTags <- topTags(qlf.overall, n = Inf, adjust.method = "BH")
-oqlf.Anther <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCanther"])
+qlf.Anther <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCanther"])
 antherTags<- topTags(qlf.Anther, n = Inf, adjust.method = "BH")
 qlf.Bud <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCbud"])
 budTags <- topTags(qlf.Bud, n = Inf, adjust.method = "BH")
@@ -489,6 +489,27 @@ chr11LeafOverlap <- inner_join(chr11GenesIM62v4, leafDEGs.mapping, by = join_by(
 
 
 ```{r}
+###exploratory work before using splicejam for sashimi plots, testing with anther
+
+###looks liek there is interesting gaps here in expresssinog and movement based off of logFC, 
+
+ggplot(chr11AntherOverlap, mapping = aes(x=START, y=logFC)) + geom_point()
+
+### need to retreive genome assemble file and convert to gtf and retreive splice junction file to pair with rna-seq reads and data 
+
+#both packages neccessary for reading in and processing gtf files, Genomic 
+BiocManager::install("GenomicFeatures")
+library(GenomicFeatures)
+BiocManager::install("txdbmaker")
+library(txdbmaker)
+BiocManager::install("rtracklayer")
+library(rtracklayer)
+install.packages("splicejam")
+mimgutGFF<- import("Mguttatusvar_IM62_797_v3.1.gene.gff3")
+
+
+
+
 
 ```
 
