@@ -492,3 +492,50 @@ chr11LeafOverlap <- inner_join(chr11GenesIM62v4, leafDEGs.mapping, by = join_by(
 
 ```
 
+
+```{r}
+## more packages + libraries :(
+BiocManager::install("org.At.tair.db")
+BiocManager::install("AnnotationDbi")
+library(org.At.tair.db)
+library(AnnotationDbi)
+```
+
+
+```{r}
+## whole genome translation into athal and then enrichment w GO terms
+athal_mimgut_orthologs <- read_tsv("Athal mimgut orthologs.txt")
+
+## normalizes format to facilitate joining (as above)
+allDEGs.mapping <- as_tibble(testDGE$genes) 
+allDEGs.mapping <- allDEGs.mapping |> 
+  mutate(GENE= str_remove(GENE,".v3.1")) |> 
+  mutate(GENE= str_remove(GENE," "))
+
+## making list of all DEGs that also contains the athal orthologs for GO enrichment
+allDEGsAthalMimgut <- inner_join(athal_mimgut_orthologs, allDEGs.mapping, by = join_by(`Gene Name` == GENE))
+
+allDEGsAthalMimgutTEST <- merge(allDEGs.mapping, athal_mimgut_orthologs, by.x = "GENE", by.y = "Gene Name", all.x = TRUE)
+
+dim(athal_mimgut_orthologs)
+dim(allDEGs.mapping)
+dim(allDEGsAthalMimgut)
+dim(allDEGsAthalMimgutTEST)
+
+##fixing the name from TAIR (ie. AT1G61140) format to ENTREZID (ie. 842407)
+athalGO <- bitr(allDEGsAthalMimgut$`Ortholog Gene Name`,
+                fromType = "TAIR",
+                toType = "ENTREZID",
+                OrgDb = org.At.tair.db)
+
+go_results <- enrichGO(gene = as.vector(athalGO$ENTREZID),
+                       OrgDb = org.At.tair.db,
+                       keyType = "ENTREZID",
+                       ont = "BP",
+                       pAdjustMethod = "BH",
+                       pvalueCutoff = 0.05,
+                       qvalueCutoff = 0.2)
+
+go_genes <- strsplit(go_results$geneID, "/")[[1]]
+print(go_genes)
+```
