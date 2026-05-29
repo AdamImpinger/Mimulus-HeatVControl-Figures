@@ -187,7 +187,9 @@ all.tissuecontrasts <- makeContrasts(HvsCanther=An_F1_H-An_F1_C, HvsCbud=Bu_F1_H
 
 fit <- glmQLFit(testDGE, design.alltissue)
 
-qlf.Anther <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCanther"])
+qlf.overall <- glmQLFTest( fit, contrast= all.tissuecontrasts)
+overallTags <- topTags(qlf.overall, n = Inf, adjust.method = "BH")
+oqlf.Anther <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCanther"])
 antherTags<- topTags(qlf.Anther, n = Inf, adjust.method = "BH")
 qlf.Bud <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCbud"])
 budTags <- topTags(qlf.Bud, n = Inf, adjust.method = "BH")
@@ -196,6 +198,22 @@ ovaryTags <- topTags(qlf.ovary, n = Inf, adjust.method = "BH")
 qlf.leaf <- glmQLFTest(fit, contrast=all.tissuecontrasts[,"HvsCleaf"])
 leafTags <- topTags(qlf.leaf, n = Inf, adjust.method = "BH")
 ```
+
+```{r}
+### designing count data frame for clair
+grouping <- testDGE$samples$group
+tissue.list <- c("An", "Bu", "Le", "Ov", "An", "Bu", "Le", "Ov", "An", "Bu", "Le", "Ov", "An", "Bu", "Le", "Ov", "An", "Bu", "Le", "Ov", "An", "Bu", "Le", "Ov", "An", "Bu", "Le", "Ov", "An", "Bu", "Le", "Ov")
+uprCountanalysis <- t(testDGE$counts)
+uprCountanalysis <- as.data.frame(uprCountanalysis)
+uprCountanalysis <- uprCountanalysis |> 
+  mutate(group=grouping) |> 
+  mutate(tissue = as.factor(tissue.list)) 
+  
+
+
+```
+
+
 
 
 ```{r}
@@ -467,8 +485,10 @@ leafDEGs.mapping <-  leafDEGs.mapping |>
 chr11LeafOverlap <- inner_join(chr11GenesIM62v4, leafDEGs.mapping, by = join_by(IM62v4 == GENE))
 
 
+```
 
 
+```{r}
 
 ```
 
