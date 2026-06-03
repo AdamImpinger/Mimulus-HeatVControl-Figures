@@ -24,7 +24,7 @@ geneUniverse <- names(geneID2GO)
 #########################
 #Read in DE data that contains the P.bar gene ID
 DEseq_genes <- read.csv("./", header = T)
-sub_genes <- DEseq_genes[DEseq_genes$padj < 0.01,]
+sub_genes <- DEseq_genes[DEseq_genes$fdr < 0.05, ]
 
 genesOfInterest <- sub_genes
 

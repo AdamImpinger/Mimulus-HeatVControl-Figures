@@ -393,7 +393,9 @@ ggplot(df, aes(x = part, y = values, fill = up_down)) +
 ```{r}
 ## all tissue venn diagrams, updated correct now
 anth.venn <- subset(antherTags$table$GENE, antherTags$table$FDR < 0.05)
+
 bud.venn <- subset(budTags$table$GENE, budTags$table$FDR < 0.05)
+
 leaf.venn <- subset(leafTags$table$GENE, leafTags$table$FDR < 0.05)
 ovary.venn <- subset(ovaryTags$table$GENE, ovaryTags$table$FDR < 0.05)
 
@@ -420,16 +422,38 @@ venn.diagram(
   cat.dist = c(0.05, 0.05, 0.05, 0.05),
   cat.pos = c(10, 10, 10, 10))
 
+
+### making augmented venn diagrams with de threshold
+anth.logfc <- antherTags$table |> 
+  mutate(abs_logFC=abs(logFC)) 
+anth.euler <- subset(antherTags$table$GENE, antherTags$table$FDR < 0.05 & anth.logfc$abs_logFC>2)
+
+
+bud.logfc <- budTags$table |> 
+  mutate(abs_logFC=abs(logFC)) 
+bud.euler <- subset(budTags$table$GENE, budTags$table$FDR < 0.05 & bud.logfc$abs_logFC>2)
+
+
+leaf.logfc <- leafTags$table |> 
+  mutate(abs_logFC=abs(logFC)) 
+leaf.euler <- subset(leafTags$table$GENE, leafTags$table$FDR < 0.05 & leaf.logfc$abs_logFC>2)
+
+ovary.logfc <- ovaryTags$table |> 
+  mutate(abs_logFC=abs(logFC))
+ovary.euler <- subset(ovaryTags$table$GENE, ovaryTags$table$FDR < 0.05 & ovary.logfc$abs_logFC>2)
+
+
 ##euler venn diagram (proportional circle sizes)
+
 allTissueLists <- list(
-  anther = anth.venn,
-    leaf = leaf.venn,
-    bud = bud.venn,
-  ovary = ovary.venn
+  anther = anth.euler,
+    leaf = leaf.euler,
+    bud = bud.euler,
+  ovary = ovary.euler
 )
 
 fit.allTissue <- euler(allTissueLists, 
-             shape = "ellipse", 
+             shape = "circle", 
              control = list(extra_loops = 50, maxeval = 2000))
 
 summary(fit.allTissue)
@@ -453,11 +477,30 @@ plot(fit.allTissue, quantities = TRUE, fills = (fill = euler.colorlist), labels 
 ```{r}
 ## matching tissue specific diferentialy expressed genes with loci of interest chromosome 11
 
+#note on calculating
+#normalizes format to facilitate joining
+overallDEGs.mapping <- as_tibble(overallTags$table)
+overallDEGs.mapping <- overallDEGs.mapping |> 
+  mutate(GENE= str_remove(GENE,".v3.1")) |> 
+  mutate(GENE= str_remove(GENE," "))
+
+
+#inner join was a success story!
+
+
+View(chr11Overlap)
+
+
+chr11GenesBase <- read.csv("TableS6_genes_CHR11_v4.csv", header = T, sep = ",")
 chr11GenesBase <- chr11GenesBase |> 
   mutate(stratum=as.factor(stratum))
-
-
 chr11GenesIM62v4 <- chr11GenesBase |> filter(IM62v4 != "x")
+
+chr11Overlap <- inner_join(chr11GenesIM62v4, overallDEGs.mapping, by = join_by(IM62v4 == GENE))
+chr11total <- nrow(chr11GenesIM62v4)
+
+
+
 
 #for loop to create dfs of the whole crhomosome sorted by strata 
 #chr11GenesIM62v4 <- chr11GenesIM62v4 |> 
@@ -470,7 +513,7 @@ chr11Overlap <- chr11Overlap |>
   mutate(stratum=as.factor(stratum)) 
   
   
-for (lvl in levels(chr11Overlap)) {
+for (lvl in levels(chr11Overlap$stratum)) {
   # Dynamically generate a name for the dataframe
   df_name <- paste0("chr11_", lvl)
   
@@ -481,19 +524,7 @@ for (lvl in levels(chr11Overlap)) {
   assign(df_name, sub_df)
 }
 
-#note on calculating
-#normalizes format to facilitate joining
-overallDEGs.mapping <- as_tibble(overallTags$table)
-overallDEGs.mapping <- overallDEGs.mapping |> 
-  mutate(GENE= str_remove(GENE,".v3.1")) |> 
-  mutate(GENE= str_remove(GENE," "))
 
-
-#inner join was a success story!
-chr11Overlap <- inner_join(chr11GenesIM62v4, overallDEGs.mapping, by = join_by(IM62v4 == GENE))
-chr11total <- nrow(chr11GenesIM62v4)
-
-View(chr11Overlap)
 
 ```
 
@@ -554,10 +585,10 @@ anth.hap.down <- hap.chr11Overlap |>
 anth.hap_up_num <- NROW(anth.hap.up)
 anth.hap_down_num <- NROW(anth.hap.down)
   
-anth.hapEDG.up <- hap.chr11Overlap |> 
+anth.hapEDG.up <- hapEDG.chr11Overlap |> 
   filter(logFC.HvsCanther>2) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
-anth.hapEDG.down <- hap.chr11Overlap |> 
+anth.hapEDG.down <- hapEDG.chr11Overlap |> 
   filter(logFC.HvsCanther< -2) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.hapEDG_up_num <- NROW(anth.hapEDG.up)
@@ -613,7 +644,7 @@ head(chr11.df)
 
 ggplot(chr11.df, aes(x = stratum, y = values, fill = up_down)) +
   geom_bar(position = "dodge", stat = "identity") +
-  scale_fill_viridis_d() +
+  scale_fill_manual(values = pairwise.colors)+
   labs(
     title = "Significantly differentially expressed genes in CHR 11 (logFC> abs(2))",
     x = "Chromsome 11 Stratum",
@@ -675,10 +706,10 @@ anth.hap.down <- hap.chr11Overlap |>
 anth.hap_up_num <- NROW(anth.hap.up)
 anth.hap_down_num <- NROW(anth.hap.down)
   
-anth.hapEDG.up <- hap.chr11Overlap |> 
+anth.hapEDG.up <- hapEDG.chr11Overlap |> 
   filter(logFC.HvsCanther>0) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
-anth.hapEDG.down <- hap.chr11Overlap |> 
+anth.hapEDG.down <- hapEDG.chr11Overlap |> 
   filter(logFC.HvsCanther< 0) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.hapEDG_up_num <- NROW(anth.hapEDG.up)
@@ -730,10 +761,10 @@ chr11.df.all <- data.frame(
   up_down = chr11.up_down,
   values = chr11.values
 )
-
+pairwise.colors <- c("#fdb125","#fde725")
 ggplot(chr11.df.all, aes(x = stratum, y = values, fill = up_down)) +
   geom_col(position = "dodge", stat = "identity") +
-  scale_fill_viridis_d() +
+  scale_fill_manual(values = pairwise.colors)+
   labs(
     title = "All differentially expressed genes in CHR 11",
     x = "Chromsome 11 Stratum",
@@ -874,6 +905,7 @@ allDEGs.mapping <- allDEGs.mapping |>
 
 ## making list of all DEGs that also contains the athal orthologs for GO enrichment
 allDEGsAthalMimgut <- inner_join(athal_mimgut_orthologs, allDEGs.mapping, by = join_by(`Gene Name` == GENE))
+##Hi Ren, started orking on this, to me, the above inner_join is what we are looking for, and these two operations have different dimensions as the merge keeps the genes that do not have matcehs and fills them with an NA, you probably already know this, just wanted to write this to remind myself in the future
 
 allDEGsAthalMimgutTEST <- merge(allDEGs.mapping, athal_mimgut_orthologs, by.x = "GENE", by.y = "Gene Name", all.x = TRUE)
 
@@ -899,3 +931,34 @@ go_results <- enrichGO(gene = as.vector(athalGO$ENTREZID),
 go_genes <- strsplit(go_results$geneID, "/")[[1]]
 print(go_genes)
 ```
+
+```{r}
+#Building on ren's code and using profiler/gost
+#https://biit.cs.ut.ee/gprofiler/gost
+
+#Closing up shop june 3, confused, defeated, %in% not workign for anythign but bud, tried using intersect, they have different values? will continue working
+
+bud.precursor <- subset(allDEGsAthalMimgut$`Gene Name`, budTags$table$FDR < 0.05 & bud.logfc$abs_logFC>2)
+bud.gost <- allDEGsAthalMimgut |> 
+  filter(`Gene Name` %in% bud.precursor)
+bud.gost.test <- intersect(allDEGsAthalMimgut$`Gene Name`, bud.precursor)
+
+view(bud.gost)
+writeLines(bud.gost$`Ortholog Gene Name`, "budAthal.txt")
+
+leaf.precursor <- subset(allDEGsAthalMimgut$`Gene Name`, leafTags$table$FDR < 0.05 & leaf.logfc$abs_logFC>2)
+leaf.gost <- intersect(allDEGsAthalMimgut$`Gene Name`,leaf.precursor)
+
+writeLines(leaf.gost$`Ortholog Gene Name`, "leafAthal.txt")
+
+anth.precursor <- subset(allDEGsAthalMimgut$`Gene Name`, leafTags$table$FDR < 0.05 & leaf.logfc$abs_logFC>2)
+anth.gost <- intersect(allDEGsAthalMimgut$`Gene Name`, anth.precursor)
+writeLines(anth.gost$`Ortholog Gene Name`, "anthAthal.txt")
+
+ovary.precursor <- subset(allDEGsAthalMimgut$`Gene Name`, ovaryTags$table$FDR < 0.05 & ovary.logfc$abs_logFC>2)
+ovary.gost <- intersect(allDEGsAthalMimgut$`Gene Name`, ovary.precursor)
+writeLines(ovary.gost$`Ortholog Gene Name`, "ovaryAthal.txt")
+
+
+```
+
