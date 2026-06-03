@@ -460,14 +460,24 @@ chr11GenesBase <- chr11GenesBase |>
 chr11GenesIM62v4 <- chr11GenesBase |> filter(IM62v4 != "x")
 
 #for loop to create dfs of the whole crhomosome sorted by strata 
-chr11GenesIM62v4 <- chr11GenesIM62v4 |> 
-  mutate(stratum=as.factor(stratum))
-for (lvl in levels(chr11GenesIM62v4$stratum)) {
+#chr11GenesIM62v4 <- chr11GenesIM62v4 |> 
+ # mutate(stratum = case_when(
+ #   IM62v4 == "out" ~ "prehap-out"
+ # ))
+ # mutate(stratum=as.factor(stratum)) 
+
+#need to redo this and create an overlap table wth each stratum sub dataframe and the all.tissue.dge file and the make contrast for anther 
+  
+chr11Overlap <- chr11Overlap |> 
+  mutate(stratum=as.factor(stratum)) 
+  
+  
+for (lvl in levels(chr11Overlap)) {
   # Dynamically generate a name for the dataframe
   df_name <- paste0("chr11_", lvl)
   
   # Filter the data
-  sub_df <- chr11GenesIM62v4[chr11GenesIM62v4$stratum == lvl, ]
+  sub_df <- chr11Overlap[chr11Overlap$stratum == lvl, ]
   
   # Assign the data to the generated name in the global environment
   assign(df_name, sub_df)
@@ -530,8 +540,9 @@ inv11b.total <- NROW(chr11_inv11b)
 anth.out.up <- out.chr11Overlap |> 
   filter(logFC.HvsCanther>2) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
+
 anth.out.down <- out.chr11Overlap |> 
-  filter(logFC.HvsCanther<2) |> 
+  filter(logFC.HvsCanther< -2) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.out_up_num <- NROW(anth.out.up)
 anth.out_down_num <- NROW(anth.out.down)
@@ -540,7 +551,7 @@ anth.hap.up <- hap.chr11Overlap |>
   filter(logFC.HvsCanther<2) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.hap.down <- hap.chr11Overlap |> 
-  filter(logFC.HvsCanther>2) |> 
+  filter(logFC.HvsCanther < -2) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.hap_up_num <- NROW(anth.hap.up)
 anth.hap_down_num <- NROW(anth.hap.down)
@@ -549,7 +560,7 @@ anth.hapEDG.up <- hap.chr11Overlap |>
   filter(logFC.HvsCanther>2) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.hapEDG.down <- hap.chr11Overlap |> 
-  filter(logFC.HvsCanther>2) |> 
+  filter(logFC.HvsCanther< -2) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.hapEDG_up_num <- NROW(anth.hapEDG.up)
 anth.hapEDG_down_num <-NROW(anth.hapEDG.down)
@@ -558,7 +569,7 @@ anth.inv11a.up <- inv11a.chr11Overlap |>
   filter(logFC.HvsCanther>2) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.inv11a.down <- inv11a.chr11Overlap |> 
-  filter(logFC.HvsCanther>2) |> 
+  filter(logFC.HvsCanther< -2) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 
 anth.inv11a_up_num <- NROW(anth.inv11a.up)
@@ -568,7 +579,7 @@ anth.inv11ab.up <- inv11ab.chr11Overlap |>
   filter(logFC.HvsCanther>2) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.inv11ab.down <- inv11ab.chr11Overlap |> 
-  filter(logFC.HvsCanther>2) |> 
+  filter(logFC.HvsCanther< -2) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.inv11ab_up_num <- NROW(anth.inv11ab.up)
 anth.inv11ab_down_num <- NROW(anth.inv11ab.down)
@@ -577,7 +588,7 @@ anth.inv11b.up <- inv11b.chr11Overlap |>
   filter(logFC.HvsCanther>2) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.inv11b.down <- inv11b.chr11Overlap |> 
- filter(logFC.HvsCanther>2) |> 
+ filter(logFC.HvsCanther< -2) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.inv11b_up_num <- NROW(anth.inv11b.up)
 anth.inv11b_down_num <- NROW(anth.inv11b.down)
@@ -593,7 +604,7 @@ pairwise.prop.test(x.chr11, n.chr11)
 chr11.stratum <- c("Out", "Out", "Haplotype", "Haplotype", "Haplotype EDG", "Haplotype EDG", "Inversion 11a", "Inversion 11a", "Inversion 11ab", "Inversion 11ab", "Inversion 11b", "Inversion 11b")
 chr11.up_down <- c("Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated")
 chr11.values <- c(anth.out_up_num/out.total, anth.out_down_num/out.total, anth.hap_up_num/hap.total, anth.hap_down_num/hap.total, anth.hapEDG_up_num/hapEDG.total, anth.hapEDG_down_num/hapEDG.total, anth.inv11a_up_num/inv11a.total, anth.inv11a_down_num/inv11a.total, anth.inv11ab_up_num/inv11ab.total, anth.inv11ab_down_num/inv11ab.total, anth.inv11b_up_num/inv11b.total, anth.inv11b_down_num/inv11b.total)
-chr11.part <- factor(chr11.stratum, levels = c("Out", "Haplotype", "Haplotype EDG", "Inversion 11a", "Inversion 11ab", "Inversion 11b"))
+chr11.stratum <- factor(chr11.stratum, levels = c("Out", "Haplotype", "Haplotype EDG", "Inversion 11a", "Inversion 11ab", "Inversion 11b"))
 
 chr11.df <- data.frame(
   stratum = chr11.stratum,
@@ -616,7 +627,7 @@ ggplot(chr11.df, aes(x = stratum, y = values, fill = up_down)) +
 ```
 
 ```{r}
-### I have done this in a little bit of a lazy way, just removed he filtering step from above and retained everythign else, you will have to re run the whole bloc if you want to tweal the above figure
+### I have done this in a little bit of a lazy way, just removed he filtering step from above and retained everythign else, you will have to re run the whole bloc if you want to tweak the above figure, only difference is I piped all of this into chr11.df.all at the bottom
 
 out.chr11Overlap <- chr11Overlap |> 
   filter(stratum=="out")
@@ -647,46 +658,58 @@ inv11ab.total <- NROW(`chr11_inv11a&b`)
 inv11b.chr11Overlap <-  chr11Overlap |>  
   filter(stratum =="inv11b")
 
-inv11b.total <- NROW(chr11_inv11b)
 anth.out.up <- out.chr11Overlap |> 
+  filter(logFC.HvsCanther>0) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
+
 anth.out.down <- out.chr11Overlap |> 
+  filter(logFC.HvsCanther< 0) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.out_up_num <- NROW(anth.out.up)
 anth.out_down_num <- NROW(anth.out.down)
 
 anth.hap.up <- hap.chr11Overlap |> 
+  filter(logFC.HvsCanther<0) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.hap.down <- hap.chr11Overlap |> 
+  filter(logFC.HvsCanther < 0) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.hap_up_num <- NROW(anth.hap.up)
 anth.hap_down_num <- NROW(anth.hap.down)
   
 anth.hapEDG.up <- hap.chr11Overlap |> 
+  filter(logFC.HvsCanther>0) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.hapEDG.down <- hap.chr11Overlap |> 
+  filter(logFC.HvsCanther< 0) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.hapEDG_up_num <- NROW(anth.hapEDG.up)
 anth.hapEDG_down_num <-NROW(anth.hapEDG.down)
 
 anth.inv11a.up <- inv11a.chr11Overlap |> 
+  filter(logFC.HvsCanther>0) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.inv11a.down <- inv11a.chr11Overlap |> 
+  filter(logFC.HvsCanther< 0) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 
 anth.inv11a_up_num <- NROW(anth.inv11a.up)
 anth.inv11a_down_num <-NROW(anth.inv11a.down)
   
 anth.inv11ab.up <- inv11ab.chr11Overlap |> 
+  filter(logFC.HvsCanther>0) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.inv11ab.down <- inv11ab.chr11Overlap |> 
+  filter(logFC.HvsCanther< 0) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.inv11ab_up_num <- NROW(anth.inv11ab.up)
 anth.inv11ab_down_num <- NROW(anth.inv11ab.down)
 
 anth.inv11b.up <- inv11b.chr11Overlap |> 
+  filter(logFC.HvsCanther>0) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.inv11b.down <- inv11b.chr11Overlap |> 
+ filter(logFC.HvsCanther< 0) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.inv11b_up_num <- NROW(anth.inv11b.up)
 anth.inv11b_down_num <- NROW(anth.inv11b.down)
@@ -702,17 +725,16 @@ pairwise.prop.test(x.chr11, n.chr11)
 chr11.stratum <- c("Out", "Out", "Haplotype", "Haplotype", "Haplotype EDG", "Haplotype EDG", "Inversion 11a", "Inversion 11a", "Inversion 11ab", "Inversion 11ab", "Inversion 11b", "Inversion 11b")
 chr11.up_down <- c("Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated")
 chr11.values <- c(anth.out_up_num/out.total, anth.out_down_num/out.total, anth.hap_up_num/hap.total, anth.hap_down_num/hap.total, anth.hapEDG_up_num/hapEDG.total, anth.hapEDG_down_num/hapEDG.total, anth.inv11a_up_num/inv11a.total, anth.inv11a_down_num/inv11a.total, anth.inv11ab_up_num/inv11ab.total, anth.inv11ab_down_num/inv11ab.total, anth.inv11b_up_num/inv11b.total, anth.inv11b_down_num/inv11b.total)
-chr11.part <- factor(chr11.stratum, levels = c("Out", "Haplotype", "Haplotype EDG", "Inversion 11a", "Inversion 11ab", "Inversion 11b"))
+chr11.stratum <- factor(chr11.stratum, levels = c("Out", "Haplotype", "Haplotype EDG", "Inversion 11ab", "Inversion 11a", "Inversion 11b"))
 
 chr11.df.all <- data.frame(
   stratum = chr11.stratum,
   up_down = chr11.up_down,
   values = chr11.values
 )
-head(chr11.df)
 
 ggplot(chr11.df.all, aes(x = stratum, y = values, fill = up_down)) +
-  geom_bar(position = "dodge", stat = "identity") +
+  geom_col(position = "dodge", stat = "identity") +
   scale_fill_viridis_d() +
   labs(
     title = "All differentially expressed genes in CHR 11",
