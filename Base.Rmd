@@ -465,8 +465,6 @@ chr11GenesIM62v4 <- chr11GenesBase |> filter(IM62v4 != "x")
  #   IM62v4 == "out" ~ "prehap-out"
  # ))
  # mutate(stratum=as.factor(stratum)) 
-
-#need to redo this and create an overlap table wth each stratum sub dataframe and the all.tissue.dge file and the make contrast for anther 
   
 chr11Overlap <- chr11Overlap |> 
   mutate(stratum=as.factor(stratum)) 
