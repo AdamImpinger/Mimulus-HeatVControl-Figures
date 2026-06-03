@@ -175,7 +175,7 @@ testDGE <- estimateDisp(testDGE,design.alltissue)
 testDGE <- calcNormFactors(testDGE)
 testDGE <- estimateDisp(testDGE, design.alltissue)
 colnames(design.alltissue) <- levels(testDGE$samples$group)
-view(design.alltissue)
+
 
 # bringing back these for clarity of the components used to create these
 Mimulus_Sample_Info <- read_csv("Mimulus_Sample_Info.csv")
