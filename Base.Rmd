@@ -30,7 +30,7 @@ library(eulerr)
 ```{r}
 #Reading raw files
 Mimulus_Sample_Info <- read_csv("Mimulus_Sample_Info.csv")
-mim_table <- read_table("all_counts3.out", col_names = TRUE)
+mim_table <- read_table("new_order_counts3.out", col_names = TRUE)
 ```
 
 ```{r}
@@ -179,7 +179,7 @@ view(design.alltissue)
 
 # bringing back these for clarity of the components used to create these
 Mimulus_Sample_Info <- read_csv("Mimulus_Sample_Info.csv")
-mim_table <- read_table("all_counts3.out", col_names = TRUE)
+mim_table <- read_table("new_order_counts3.out", col_names = TRUE)
 mimGroups <- Mimulus_Sample_Info$Group
 
 all.tissuecontrasts <- makeContrasts(HvsCanther=An_F1_H-An_F1_C, HvsCbud=Bu_F1_H-Bu_F1_C, HvsCovary=Ov_F1_H-Ov_F1_C, HvsCleaf=Le_F1_H-Le_F1_C, levels=design.alltissue)
