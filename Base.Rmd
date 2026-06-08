@@ -30,7 +30,7 @@ library(eulerr)
 ```{r}
 #Reading raw files
 Mimulus_Sample_Info <- read_csv("Mimulus_Sample_Info.csv")
-mim_table <- read_table("all_counts3.out", col_names = TRUE)
+mim_table <- read_table("new_order_counts3.out", col_names = TRUE)
 ```
 
 ```{r}
@@ -41,15 +41,17 @@ mimGroups <- Mimulus_Sample_Info$Group
 mimGroups
 
 testDGE <- DGEList(counts = mimData, group = factor(mimGroups), genes = mimAnnotation)
-## correcting groups to account for numerical sorting of plant # in testDGE samples not matching mimulus_sample_info order (54 in heat treatment, 60 in cold) 
-testDGE$samples$group[9] <- factor("An_F1_H")
-testDGE$samples$group[21] <- factor("An_F1_C")
-testDGE$samples$group[10] <- factor("Bu_F1_H")
-testDGE$samples$group[22] <- factor("Bu_F1_C")
-testDGE$samples$group[11] <- factor("Le_F1_H")
-testDGE$samples$group[23] <- factor("Le_F1_C")
-testDGE$samples$group[12] <- factor("Ov_F1_H")
-testDGE$samples$group[24] <- factor("Ov_F1_C")
+
+
+##previous corrections to account for numerical sorting of plant # in testDGE samples not matching mimulus_sample_info order, corrected with matching original header order to csv in "counts" file creation
+# testDGE$samples$group[9] <- factor("An_F1_H")
+# testDGE$samples$group[21] <- factor("An_F1_C")
+# testDGE$samples$group[10] <- factor("Bu_F1_H")
+# testDGE$samples$group[22] <- factor("Bu_F1_C")
+# testDGE$samples$group[11] <- factor("Le_F1_H")
+# testDGE$samples$group[23] <- factor("Le_F1_C")
+# testDGE$samples$group[12] <- factor("Ov_F1_H")
+# testDGE$samples$group[24] <- factor("Ov_F1_C")
 ```
 
 ```{r}
@@ -104,7 +106,7 @@ dge.subset_bud <- calcNormFactors(dge.subset_bud)
 
 ```{r}
 ### mds plots ###
-#plotMDS.DGEList(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), dim.plot = c(1,2))
+plotMDS.DGEList(testDGE, method="bcv", col=as.numeric(testDGE$samples$group), dim.plot = c(1,2))
 
 #label = testDGE$samples$group
 ```
@@ -185,7 +187,7 @@ colnames(design.alltissue) <- levels(testDGE$samples$group)
 
 # bringing back these for clarity of the components used to create these
 Mimulus_Sample_Info <- read_csv("Mimulus_Sample_Info.csv")
-mim_table <- read_table("all_counts3.out", col_names = TRUE)
+mim_table <- read_table("new_order_counts3.out", col_names = TRUE)
 mimGroups <- Mimulus_Sample_Info$Group
 
 all.tissuecontrasts <- makeContrasts(HvsCanther=An_F1_H-An_F1_C, HvsCbud=Bu_F1_H-Bu_F1_C, HvsCovary=Ov_F1_H-Ov_F1_C, HvsCleaf=Le_F1_H-Le_F1_C, levels=design.alltissue)
