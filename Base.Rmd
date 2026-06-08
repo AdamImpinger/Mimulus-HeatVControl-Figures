@@ -121,34 +121,40 @@ colnames(nmds_points) <- c("NMDS1", "NMDS2", "NMDS3")
 ```
 
 ```{r}
+#
 ## assuming you have a dataframe called 'metadata' with a column 'Group'
-nmds_points$SampleID <- rownames(nmds_points)
+#nmds_points$SampleID <- rownames(nmds_points)
 #nmds_points$Group <- Mimulus_Sample_Info$Group
 nmds_points$Group <- testDGE$samples$group
-
+nmds_points$Group <- as.factor(nmds_points$Group)
 #colors <- c("lightskyblue1", "lightskyblue2", "lightskyblue3","lightskyblue4", "goldenrod1","goldenrod2", "goldenrod3","goldenrod4")
-colors <- c("lightskyblue1","goldenrod1","lightskyblue2","goldenrod2","lightskyblue3","goldenrod3","lightskyblue4","goldenrod4")
+colors.nmds <- c("#fde725","#fde725","#375b8d","#375b8d","#440154","#440154","#239971","#239971")
 
 ##for some reason, this only works when this is stored as a new object, not as a modification to "colors"
-group_colors <- colors[as.numeric(as.factor(nmds_points$Group))]
+group_colors <- colors[as.numeric(nmds_points$Group)]
 color_play <- as.factor(nmds_points$Group)
 legend_guide <- levels(color_play)
+nmds.shapes <- c(1,19,1,19,1,19,1,19)
+nmds_point_shapes <- nmds.shapes[as.numeric(nmds_points$Group)]
 
-# create static 3D plot
+# create static 3D plot - need to run as a group 
+par(mar = c(5, 4, 4, 5), xpd = TRUE)
+
 sample.3d.plot <- scatterplot3d(x = nmds_points$NMDS1, 
               y = nmds_points$NMDS2, 
               z = nmds_points$NMDS3,
               color = group_colors,
-              pch = 19,
+              pch = nmds_point_shapes,
               xlab = "NMDS1",
               ylab = "NMDS2",
               zlab = "NMDS3",
-              main = "3D NMDS Plot")
-legend(x = 4, y = 7,
+              main = "3D NMDS Plot") 
+
+legend("topright",
        legend = legend_guide,
-       col = colors, 
+       col = colors,
+       inset = c(-0.10, -.12),
        pch = 16, 
-       inset = 0.05, 
        xpd = TRUE)
 ```
 
@@ -175,7 +181,7 @@ testDGE <- estimateDisp(testDGE,design.alltissue)
 testDGE <- calcNormFactors(testDGE)
 testDGE <- estimateDisp(testDGE, design.alltissue)
 colnames(design.alltissue) <- levels(testDGE$samples$group)
-view(design.alltissue)
+
 
 # bringing back these for clarity of the components used to create these
 Mimulus_Sample_Info <- read_csv("Mimulus_Sample_Info.csv")
@@ -268,6 +274,7 @@ is.de.leaf_hvc <-  decideTests.DGEExact(et.leaf.hvc,p=0.05)
 is.de.anth_hvc <-  decideTests.DGEExact(et.anth.hvc,p=0.05)
 is.de.ovary_hvc <- decideTests.DGEExact(et.ovary.hvc,p=0.05)
 is.de.bud_hvc <- decideTests.DGEExact(et.bud.hvc,p=0.05)
+
 ```
 
 
@@ -393,7 +400,9 @@ ggplot(df, aes(x = part, y = values, fill = up_down)) +
 ```{r}
 ## all tissue venn diagrams, updated correct now
 anth.venn <- subset(antherTags$table$GENE, antherTags$table$FDR < 0.05)
+
 bud.venn <- subset(budTags$table$GENE, budTags$table$FDR < 0.05)
+
 leaf.venn <- subset(leafTags$table$GENE, leafTags$table$FDR < 0.05)
 ovary.venn <- subset(ovaryTags$table$GENE, ovaryTags$table$FDR < 0.05)
 
@@ -420,16 +429,38 @@ venn.diagram(
   cat.dist = c(0.05, 0.05, 0.05, 0.05),
   cat.pos = c(10, 10, 10, 10))
 
+
+### making augmented venn diagrams with de threshold
+anth.logfc <- antherTags$table |> 
+  mutate(abs_logFC=abs(logFC)) 
+anth.euler <- subset(antherTags$table$GENE, antherTags$table$FDR < 0.05 & anth.logfc$abs_logFC>2)
+
+
+bud.logfc <- budTags$table |> 
+  mutate(abs_logFC=abs(logFC)) 
+bud.euler <- subset(budTags$table$GENE, budTags$table$FDR < 0.05 & bud.logfc$abs_logFC>2)
+
+
+leaf.logfc <- leafTags$table |> 
+  mutate(abs_logFC=abs(logFC)) 
+leaf.euler <- subset(leafTags$table$GENE, leafTags$table$FDR < 0.05 & leaf.logfc$abs_logFC>2)
+
+ovary.logfc <- ovaryTags$table |> 
+  mutate(abs_logFC=abs(logFC))
+ovary.euler <- subset(ovaryTags$table$GENE, ovaryTags$table$FDR < 0.05 & ovary.logfc$abs_logFC>2)
+
+
 ##euler venn diagram (proportional circle sizes)
+
 allTissueLists <- list(
-  anther = anth.venn,
-    leaf = leaf.venn,
-    bud = bud.venn,
-  ovary = ovary.venn
+  anther = anth.euler,
+    leaf = leaf.euler,
+    bud = bud.euler,
+  ovary = ovary.euler
 )
 
 fit.allTissue <- euler(allTissueLists, 
-             shape = "ellipse", 
+             shape = "circle", 
              control = list(extra_loops = 50, maxeval = 2000))
 
 summary(fit.allTissue)
@@ -448,40 +479,83 @@ plot(fit.allTissue, quantities = TRUE, fills = (fill = euler.colorlist), labels 
 ```
 
 
+```{r}
+### starting figures
+for (lvl in levels(chr11Overlap$stratum)) {
+  df_name <- paste0(lvl, ".total")
+  
+  sub_df <- chr11Overlap[chr11Overlap$stratum == lvl, ] |> 
+    NROW()
+  
+  assign(df_name, sub_df)
+}
+
+anth.figures <- subset(antherTags$table, antherTags$table$FDR < 0.05) |> 
+  mutate("Tissue"= "Anther")
+ovary.figures <- subset(ovaryTags$table, ovaryTags$table$FDR < 0.05) |> 
+   mutate("Tissue"= "Ovary")
+bud.figures <- subset(budTags$table, budTags$table$FDR < 0.05) |> 
+   mutate("Tissue"= "Bud")
+leaf.figures <- subset(leafTags$table, leafTags$table$FDR < 0.05) |>
+   mutate("Tissue"= "Leaf")
+  
+overall.figures <- bind_rows(anth.figures,ovary.figures,bud.figures, leaf.figures)
+
+violin.color.order <- c("#FDE725", "#375B8D","#28AE80", "#440154")
+violin.overall.figures <- overall.figures |> 
+  mutate(absLoGFC = abs(logFC))
+ggplot(violin.overall.figures, aes(factor(Tissue), absLoGFC), alpha(0.5)) +
+  geom_violin(aes(fill = Tissue)) +
+  scale_fill_manual(values = violin.color.order) +
+  stat_summary(fun = "mean", geom = "crossbar", width = 0.5, color = "grey")+
+  theme_bw()
+  
+#non-abs
+ggplot(overall.figures, aes(factor(Tissue), logFC), alpha(0.5)) +
+  geom_violin(aes(fill = Tissue)) +
+  scale_fill_manual(values = euler.colorlist) +
+  stat_summary(fun = "mean", geom = "crossbar", width = 0.5, color = "grey")+
+  theme_bw()
+```
+
+
+```{r}
+### Violin plots for logFC seperated by up and down logfc directionality
+
+
+
+anther.upregulated.violin <- fdr.bytissue.geneoverlap |> 
+  filter(Tissue=="Anther") |> 
+  filter(logFC>0) |> 
+  mutate("Direction" = "Up regulated")
+
+anther.downregulated.violin <- fdr.bytissue.geneoverlap |> 
+  filter(Tissue=="Anther") |> 
+  filter(logFC<0) |> 
+  mutate("Direction" = "Down regulated")
+
+anther.chr11.joined.violin <- bind_rows(anther.downregulated.violin,anther.upregulated.violin)
+anther.chr11.joined.violin$Direction <- as.factor(anther.chr11.joined.violin$Direction)
+
+dodge_center <- position_dodge(width = 0.9)
+
+ggplot(anther.chr11.joined.violin, aes(as.factor(stratum), logFC, fill = Direction), alpha(0.5)) +
+  geom_violin(aes(fill = Direction), ) +
+  scale_fill_manual(values = anther.pairwise.colors) +
+  stat_summary(fun = "mean", geom = "crossbar", width = 0.7, color = "black", position = dodge_center)+
+  theme_bw()+
+  labs(
+    title= "Directionality of Differential Expression by stratum",
+    x = "Stratum",
+    y = "LogFC"
+  )
+
+```
+```
 
 
 ```{r}
 ## matching tissue specific diferentialy expressed genes with loci of interest chromosome 11
-
-chr11GenesBase <- chr11GenesBase |> 
-  mutate(stratum=as.factor(stratum))
-
-
-chr11GenesIM62v4 <- chr11GenesBase |> filter(IM62v4 != "x")
-
-#for loop to create dfs of the whole crhomosome sorted by strata 
-#chr11GenesIM62v4 <- chr11GenesIM62v4 |> 
- # mutate(stratum = case_when(
- #   IM62v4 == "out" ~ "prehap-out"
- # ))
- # mutate(stratum=as.factor(stratum)) 
-
-#need to redo this and create an overlap table wth each stratum sub dataframe and the all.tissue.dge file and the make contrast for anther 
-  
-chr11Overlap <- chr11Overlap |> 
-  mutate(stratum=as.factor(stratum)) 
-  
-  
-for (lvl in levels(chr11Overlap)) {
-  # Dynamically generate a name for the dataframe
-  df_name <- paste0("chr11_", lvl)
-  
-  # Filter the data
-  sub_df <- chr11Overlap[chr11Overlap$stratum == lvl, ]
-  
-  # Assign the data to the generated name in the global environment
-  assign(df_name, sub_df)
-}
 
 #note on calculating
 #normalizes format to facilitate joining
@@ -492,12 +566,81 @@ overallDEGs.mapping <- overallDEGs.mapping |>
 
 
 #inner join was a success story!
-chr11Overlap <- inner_join(chr11GenesIM62v4, overallDEGs.mapping, by = join_by(IM62v4 == GENE))
-chr11total <- nrow(chr11GenesIM62v4)
+
 
 View(chr11Overlap)
 
+
+chr11GenesBase <- read.csv("TableS6_genes_CHR11_v4.csv", header = T, sep = ",")
+chr11GenesIM62v4 <- chr11GenesBase |> filter(IM62v4 != "x")
+
+###this sticks around because overallDEFs mapping contains all the reasonably expressed genes, and thusly makes it appropriate for caluclating the baseline totals for each level of stratum
+
+chr11Overlap <- inner_join(chr11GenesIM62v4, overallDEGs.mapping, by = join_by(IM62v4 == GENE))
+chr11total <- nrow(chr11GenesIM62v4)
+
+chr11
+
+
+
+
+#for loop to create dfs of the whole crhomosome sorted by strata 
+#chr11GenesIM62v4 <- chr11GenesIM62v4 |> 
+ # mutate(stratum = case_when(
+ #   IM62v4 == "out" ~ "prehap-out"
+ # ))
+ # mutate(stratum=as.factor(stratum)) 
+  
+#import this step comes first, needs to be a character string, good to know for the future
+chr11Overlap <- chr11Overlap |> 
+  mutate(stratum = case_match(stratum, 
+                  "hap-EDG" ~ "hapEDG", 
+                  "inv11a&b" ~ "inv11ab", 
+                  .default = stratum)) |>
+  factor(stratum)
+  
+
+
+chr11Overlap$stratum <- as.factor(chr11Overlap$stratum)
+levels(chr11Overlap$stratum)
+
+
+  
+#Thiss will be the same for all tissue types for pairwise comparisions
+  
+for (lvl in levels(chr11Overlap$stratum)) {
+  df_name <- paste0(lvl, ".total")
+  
+  sub_df <- chr11Overlap[chr11Overlap$stratum == lvl, ] |> 
+    NROW()
+  
+  assign(df_name, sub_df)
+}
+
+for (lvl in levels(chr11Overlap$stratum)) {
+  df_name <- paste0(lvl, ".chr11Overlap")
+  
+  sub_df <- chr11Overlap[chr11Overlap$stratum == lvl, ]
+  
+  assign(df_name, sub_df)
+}
+
+### this lets us check fdr by tissue,
+overall.figures <- overall.figures |> 
+  mutate(GENE= str_remove(GENE,".v3.1")) |> 
+  mutate(GENE= str_remove(GENE," "))
+  
+fdr.bytissue.geneoverlap <- inner_join(chr11GenesIM62v4, overall.figures, by = join_by(IM62v4 == GENE)) 
+
+fdr.bytissue.geneoverlap <- fdr.bytissue.geneoverlap |> 
+  mutate(stratum = case_match(stratum,
+                              "inv11a&b" ~ "inv11ab",
+                              .default = stratum)) |> 
+  filter_out(stratum == "hap-EDG")
+fdr.bytissue.geneoverlap$stratum <- as.factor(fdr.bytissue.geneoverlap$stratum)
+
 ```
+
 
 ```{r}
 #### Pairwise analysis, marking by chromosome stratum in character 11
@@ -506,105 +649,38 @@ View(chr11Overlap)
 #Correcting here now, total # should be calculted from chr11IM62v4
 
 
-out.chr11Overlap <- chr11Overlap |> 
-  filter(stratum=="out")
-
-out.total <- NROW(chr11_out)
+for (lvl in levels (fdr.bytissue.geneoverlap$stratum)) {
+  df_name <- paste0("anth.", lvl, "_up_num")
   
-
-hap.chr11Overlap<- chr11Overlap |> 
-  filter(stratum=="hap")
-
-hap.total <- NROW(chr11_hap)
-
-hapEDG.chr11Overlap <-  chr11Overlap |>  
-  filter(stratum == "hap-EDG")
-
-hapEDG.total <- NROW(`chr11_hap-EDG`)
-
-inv11a.chr11Overlap <-  chr11Overlap |>  
-  filter(stratum == "inv11a")
-
-inv11a.total <- NROW(chr11_inv11a)
-
-inv11ab.chr11Overlap <-  chr11Overlap |>  
-  filter(stratum =="inv11a&b")
-
-inv11ab.total <- NROW(`chr11_inv11a&b`)
-
-inv11b.chr11Overlap <-  chr11Overlap |>  
-  filter(stratum =="inv11b")
-
-inv11b.total <- NROW(chr11_inv11b)
-
-anth.out.up <- out.chr11Overlap |> 
-  filter(logFC.HvsCanther>2) |> 
-  dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
-
-anth.out.down <- out.chr11Overlap |> 
-  filter(logFC.HvsCanther< -2) |> 
-  dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
-anth.out_up_num <- NROW(anth.out.up)
-anth.out_down_num <- NROW(anth.out.down)
-
-anth.hap.up <- hap.chr11Overlap |> 
-  filter(logFC.HvsCanther<2) |> 
-  dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
-anth.hap.down <- hap.chr11Overlap |> 
-  filter(logFC.HvsCanther < -2) |> 
-  dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
-anth.hap_up_num <- NROW(anth.hap.up)
-anth.hap_down_num <- NROW(anth.hap.down)
+  sub_df <- fdr.bytissue.geneoverlap[fdr.bytissue.geneoverlap$stratum == lvl, ] |> 
+  filter(logFC>2) |> 
+  filter(Tissue == "Anther") |> 
+  NROW()
   
-anth.hapEDG.up <- hap.chr11Overlap |> 
-  filter(logFC.HvsCanther>2) |> 
-  dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
-anth.hapEDG.down <- hap.chr11Overlap |> 
-  filter(logFC.HvsCanther< -2) |> 
-  dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
-anth.hapEDG_up_num <- NROW(anth.hapEDG.up)
-anth.hapEDG_down_num <-NROW(anth.hapEDG.down)
+  assign(df_name, sub_df)
+}
 
-anth.inv11a.up <- inv11a.chr11Overlap |> 
-  filter(logFC.HvsCanther>2) |> 
-  dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
-anth.inv11a.down <- inv11a.chr11Overlap |> 
-  filter(logFC.HvsCanther< -2) |> 
-  dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
-
-anth.inv11a_up_num <- NROW(anth.inv11a.up)
-anth.inv11a_down_num <-NROW(anth.inv11a.down)
+for (lvl in levels (fdr.bytissue.geneoverlap$stratum)) {
+  df_name <- paste0("anth.", lvl, "_down_num")
   
-anth.inv11ab.up <- inv11ab.chr11Overlap |> 
-  filter(logFC.HvsCanther>2) |> 
-  dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
-anth.inv11ab.down <- inv11ab.chr11Overlap |> 
-  filter(logFC.HvsCanther< -2) |> 
-  dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
-anth.inv11ab_up_num <- NROW(anth.inv11ab.up)
-anth.inv11ab_down_num <- NROW(anth.inv11ab.down)
+  sub_df <- fdr.bytissue.geneoverlap[fdr.bytissue.geneoverlap$stratum == lvl, ] |> 
+  filter(logFC< -2) |> 
+  filter(Tissue == "Anther") |> 
+  NROW()
+  
+  assign(df_name, sub_df)
+}
 
-anth.inv11b.up <- inv11b.chr11Overlap |> 
-  filter(logFC.HvsCanther>2) |> 
-  dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
-anth.inv11b.down <- inv11b.chr11Overlap |> 
- filter(logFC.HvsCanther< -2) |> 
-  dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
-anth.inv11b_up_num <- NROW(anth.inv11b.up)
-anth.inv11b_down_num <- NROW(anth.inv11b.down)
-
-
-
-x.chr11 <- c(anth.out_up_num, anth.out_down_num, anth.hap_up_num, anth.hap_down_num, anth.hapEDG_up_num, anth.hapEDG_down_num, anth.inv11a_up_num, anth.inv11a_down_num, anth.inv11ab_up_num, anth.inv11ab_down_num, anth.inv11b_up_num, anth.inv11b_down_num) 
-n.chr11 <- c(out.total, out.total, hap.total, hap.total, hapEDG.total, hapEDG.total, inv11a.total, inv11a.total, inv11ab.total, inv11ab.total, inv11b.total, inv11b.total)
+x.chr11.anth <- c(anth.out_up_num, anth.out_down_num, anth.hap_up_num, anth.hap_down_num, anth.inv11a_up_num, anth.inv11a_down_num, anth.inv11ab_up_num, anth.inv11ab_down_num, anth.inv11b_up_num, anth.inv11b_down_num) 
+n.chr11.anth <- c(out.total, out.total, hap.total, hap.total, inv11a.total, inv11a.total, inv11ab.total, inv11ab.total, inv11b.total, inv11b.total)
 
 
 pairwise.prop.test(x.chr11, n.chr11)
 
-chr11.stratum <- c("Out", "Out", "Haplotype", "Haplotype", "Haplotype EDG", "Haplotype EDG", "Inversion 11a", "Inversion 11a", "Inversion 11ab", "Inversion 11ab", "Inversion 11b", "Inversion 11b")
-chr11.up_down <- c("Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated")
-chr11.values <- c(anth.out_up_num/out.total, anth.out_down_num/out.total, anth.hap_up_num/hap.total, anth.hap_down_num/hap.total, anth.hapEDG_up_num/hapEDG.total, anth.hapEDG_down_num/hapEDG.total, anth.inv11a_up_num/inv11a.total, anth.inv11a_down_num/inv11a.total, anth.inv11ab_up_num/inv11ab.total, anth.inv11ab_down_num/inv11ab.total, anth.inv11b_up_num/inv11b.total, anth.inv11b_down_num/inv11b.total)
-chr11.stratum <- factor(chr11.stratum, levels = c("Out", "Haplotype", "Haplotype EDG", "Inversion 11a", "Inversion 11ab", "Inversion 11b"))
+chr11.stratum <- c("Out", "Out", "Haplotype", "Haplotype", "Inversion 11a", "Inversion 11a", "Inversion 11ab", "Inversion 11ab", "Inversion 11b", "Inversion 11b")
+chr11.up_down <- c("Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated")
+chr11.values <- c(anth.out_up_num/out.total, anth.out_down_num/out.total, anth.hap_up_num/hap.total, anth.hap_down_num/hap.total, anth.inv11a_up_num/inv11a.total, anth.inv11a_down_num/inv11a.total, anth.inv11ab_up_num/inv11ab.total, anth.inv11ab_down_num/inv11ab.total, anth.inv11b_up_num/inv11b.total, anth.inv11b_down_num/inv11b.total)
+chr11.stratum <- factor(chr11.stratum, levels = c("Out", "Haplotype", "Inversion 11a", "Inversion 11ab", "Inversion 11b"))
 
 chr11.df <- data.frame(
   stratum = chr11.stratum,
@@ -612,19 +688,197 @@ chr11.df <- data.frame(
   values = chr11.values
 )
 head(chr11.df)
+anther.pairwise.colors <- c("#fdb125","#fde725")
 
 ggplot(chr11.df, aes(x = stratum, y = values, fill = up_down)) +
   geom_bar(position = "dodge", stat = "identity") +
-  scale_fill_viridis_d() +
+  scale_fill_manual(values = anther.pairwise.colors)+
   labs(
-    title = "Significantly differentially expressed genes in CHR 11 (logFC> abs(2))",
+    title = "Majorly differentially expressed genes in anther in CHR 11 (logFC> abs(2))",
     x = "Chromsome 11 Stratum",
-    y = "Proportion of Total Genes",
+    y = "Proportion of Total Genes in Strata",
     fill = "Direction"
   ) +
   theme_minimal()
 
 ```
+
+
+
+```{r} 
+#majorly expressed genes on chr 11: bud
+
+
+for (lvl in levels (fdr.bytissue.geneoverlap$stratum)) {
+  df_name <- paste0("bud.", lvl, "_up_num")
+  
+  sub_df <- fdr.bytissue.geneoverlap[fdr.bytissue.geneoverlap$stratum == lvl, ] |> 
+  filter(logFC>2) |> 
+  filter(Tissue == "Bud") |> 
+  NROW()
+  
+  assign(df_name, sub_df)
+}
+
+for (lvl in levels (chr11Overlap$stratum)) {
+  df_name <- paste0("bud.", lvl, "_down_num")
+  
+  sub_df <- chr11Overlap[chr11Overlap$stratum == lvl, ] |> 
+  filter(logFC.HvsCbud< -2) |> 
+  filter(Tissue == "Bud") |> 
+  NROW()
+  
+  assign(df_name, sub_df)
+}
+
+
+
+x.chr11.bud <- c(bud.out_up_num, bud.out_down_num, bud.hap_up_num, bud.hap_down_num, bud.inv11a_up_num, bud.inv11a_down_num, bud.inv11ab_up_num, bud.inv11ab_down_num, bud.inv11b_up_num, bud.inv11b_down_num) 
+n.chr11.bud <- c(out.total, out.total, hap.total, hap.total, inv11a.total, inv11a.total, inv11ab.total, inv11ab.total, inv11b.total, inv11b.total)
+
+
+pairwise.prop.test(x.chr11.bud, n.chr11.bud)
+
+chr11.stratum <- c("Out", "Out", "Haplotype", "Haplotype", "Inversion 11a", "Inversion 11a", "Inversion 11ab", "Inversion 11ab", "Inversion 11b", "Inversion 11b")
+chr11.up_down <- c("Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated")
+chr11.values.bud <- c(bud.out_up_num/out.total, bud.out_down_num/out.total, bud.hap_up_num/hap.total, bud.hap_down_num/hap.total, bud.inv11a_up_num/inv11a.total, bud.inv11a_down_num/inv11a.total, bud.inv11ab_up_num/inv11ab.total, bud.inv11ab_down_num/inv11ab.total, bud.inv11b_up_num/inv11b.total, bud.inv11b_down_num/inv11b.total)
+chr11.stratum <- factor(chr11.stratum, levels = c("Out", "Haplotype", "Inversion 11a", "Inversion 11ab", "Inversion 11b"))
+
+chr11.df.bud <- data.frame(
+  stratum = chr11.stratum,
+  up_down = chr11.up_down,
+  values = chr11.values.bud
+)
+bud.pairwise.colors <-  c("#375b8d","#5480bc")
+
+ggplot(chr11.df.bud, aes(x = stratum, y = values, fill = up_down)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  scale_fill_manual(values = bud.pairwise.colors)+
+  labs(
+    title = "Majorly differentially expressed genes in bud in CHR 11 (logFC> abs(2))",
+    x = "Chromsome 11 Stratum",
+    y = "Proportion of Total Genes in Strata",
+    fill = "Direction"
+  ) +
+  theme_minimal()
+
+```
+
+
+```{r}
+#majorly expressed genes on chr 11: ovary
+
+for (lvl in levels (fdr.bytissue.geneoverlap$stratum)) {
+  df_name <- paste0("ovary.", lvl, "_up_num")
+  
+  sub_df <- fdr.bytissue.geneoverlap[fdr.bytissue.geneoverlap$stratum == lvl, ] |> 
+  filter(logFC>2) |> 
+  filter(Tissue == "Ovary") |> 
+  NROW()
+  
+  assign(df_name, sub_df)
+}
+
+for (lvl in levels (fdr.bytissue.geneoverlap$stratum)) {
+  df_name <- paste0("ovary.", lvl, "_down_num")
+  
+  sub_df <- fdr.bytissue.geneoverlap[fdr.bytissue.geneoverlap$stratum == lvl, ] |> 
+  filter(logFC < -2) |> 
+  filter(Tissue == "Ovary") |> 
+  NROW()
+  
+  assign(df_name, sub_df)
+}
+
+x.chr11.ovary <- c(ovary.out_up_num, ovary.out_down_num, ovary.hap_up_num, ovary.hap_down_num, ovary.inv11a_up_num, ovary.inv11a_down_num, ovary.inv11ab_up_num, ovary.inv11ab_down_num, ovary.inv11b_up_num, ovary.inv11b_down_num) 
+n.chr11.ovary <- c(out.total, out.total, hap.total, hap.total, inv11a.total, inv11a.total, inv11ab.total, inv11ab.total, inv11b.total, inv11b.total)
+
+
+pairwise.prop.test(x.chr11.ovary, n.chr11.ovary)
+
+chr11.stratum <- c("Out", "Out", "Haplotype", "Haplotype",  "Inversion 11a", "Inversion 11a", "Inversion 11ab", "Inversion 11ab", "Inversion 11b", "Inversion 11b")
+chr11.up_down <- c("Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated")
+chr11.values.ovary <- c(ovary.out_up_num/out.total, ovary.out_down_num/out.total, ovary.hap_up_num/hap.total, ovary.hap_down_num/hap.total, ovary.inv11a_up_num/inv11a.total, ovary.inv11a_down_num/inv11a.total, ovary.inv11ab_up_num/inv11ab.total, ovary.inv11ab_down_num/inv11ab.total, ovary.inv11b_up_num/inv11b.total, ovary.inv11b_down_num/inv11b.total)
+chr11.stratum <- factor(chr11.stratum, levels = c("Out", "Haplotype",  "Inversion 11a", "Inversion 11ab", "Inversion 11b"))
+
+chr11.df.ovary <- data.frame(
+  stratum = chr11.stratum,
+  up_down = chr11.up_down,
+  values = chr11.values.ovary
+)
+ovary.pairwise.colors <-  c("#440154","#8102a0")
+
+ggplot(chr11.df.ovary, aes(x = stratum, y = values, fill = up_down)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  scale_fill_manual(values = ovary.pairwise.colors)+
+  labs(
+    title = "majoly differentially expressed genes in ovary in CHR 11 (logFC> abs(2))",
+    x = "Chromsome 11 Stratum",
+    y = "Proportion of Total Genes in Strata",
+    fill = "Direction"
+  ) +
+  theme_minimal()
+
+```
+
+```{r}
+#majorly expressed genes on chr 11: leaf
+for (lvl in levels (fdr.bytissue.geneoverlap$stratum)) {
+  df_name <- paste0("ovary.", lvl, "_up_num")
+  
+  sub_df <- fdr.bytissue.geneoverlap[fdr.bytissue.geneoverlap$stratum == lvl, ] |> 
+  filter(logFC>2) |> 
+  filter(Tissue == "Leaf") |> 
+  NROW()
+  
+  assign(df_name, sub_df)
+}
+
+for (lvl in levels (fdr.bytissue.geneoverlap$stratum)) {
+  df_name <- paste0("ovary.", lvl, "_down_num")
+  
+  sub_df <- fdr.bytissue.geneoverlap[fdr.bytissue.geneoverlap$stratum == lvl, ] |> 
+  filter(logFC < -2) |> 
+  filter(Tissue == "Leaf") |> 
+  NROW()
+  
+  assign(df_name, sub_df)
+}
+
+x.chr11.leaf <- c(leaf.out_up_num, leaf.out_down_num, leaf.hap_up_num, leaf.hap_down_num, leaf.inv11a_up_num, leaf.inv11a_down_num, leaf.inv11ab_up_num, leaf.inv11ab_down_num, leaf.inv11b_up_num, leaf.inv11b_down_num) 
+n.chr11.leaf <- c(out.total, out.total, hap.total, hap.total, inv11a.total, inv11a.total, inv11ab.total, inv11ab.total, inv11b.total, inv11b.total)
+
+
+pairwise.prop.test(x.chr11.leaf, n.chr11.leaf)
+
+chr11.stratum <- c("Out", "Out", "Haplotype", "Haplotype",  "Inversion 11a", "Inversion 11a", "Inversion 11ab", "Inversion 11ab", "Inversion 11b", "Inversion 11b")
+chr11.up_down <- c("Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated", "Up Regulated", "Down Regulated")
+chr11.values.leaf <- c(leaf.out_up_num/out.total, leaf.out_down_num/out.total, leaf.hap_up_num/hap.total, leaf.hap_down_num/hap.total, leaf.inv11a_up_num/inv11a.total, leaf.inv11a_down_num/inv11a.total, leaf.inv11ab_up_num/inv11ab.total, leaf.inv11ab_down_num/inv11ab.total, leaf.inv11b_up_num/inv11b.total, leaf.inv11b_down_num/inv11b.total)
+chr11.stratum <- factor(chr11.stratum, levels = c("Out", "Haplotype", "Inversion 11a", "Inversion 11ab", "Inversion 11b"))
+
+chr11.df.leaf <- data.frame(
+  stratum = chr11.stratum,
+  up_down = chr11.up_down,
+  values = chr11.values.leaf
+)
+leaf.pairwise.colors <-  c("#239971","#4dd6a7")
+
+ggplot(chr11.df.leaf, aes(x = stratum, y = values, fill = up_down)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  scale_fill_manual(values = leaf.pairwise.colors)+
+  labs(
+    title = "majoly differentially expressed genes in leaf in CHR 11 (logFC> abs(2))",
+    x = "Chromsome 11 Stratum",
+    y = "Proportion of Total Genes in Strata",
+    fill = "Direction"
+  ) +
+  theme_minimal()
+
+
+
+
+```
+
 
 ```{r}
 ### I have done this in a little bit of a lazy way, just removed he filtering step from above and retained everythign else, you will have to re run the whole bloc if you want to tweak the above figure, only difference is I piped all of this into chr11.df.all at the bottom
@@ -677,10 +931,10 @@ anth.hap.down <- hap.chr11Overlap |>
 anth.hap_up_num <- NROW(anth.hap.up)
 anth.hap_down_num <- NROW(anth.hap.down)
   
-anth.hapEDG.up <- hap.chr11Overlap |> 
+anth.hapEDG.up <- hapEDG.chr11Overlap |> 
   filter(logFC.HvsCanther>0) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
-anth.hapEDG.down <- hap.chr11Overlap |> 
+anth.hapEDG.down <- hapEDG.chr11Overlap |> 
   filter(logFC.HvsCanther< 0) |> 
   dplyr::select(IM62v4:logFC.HvsCanther, logCPM:FDR)
 anth.hapEDG_up_num <- NROW(anth.hapEDG.up)
@@ -714,10 +968,30 @@ anth.inv11b.down <- inv11b.chr11Overlap |>
 anth.inv11b_up_num <- NROW(anth.inv11b.up)
 anth.inv11b_down_num <- NROW(anth.inv11b.down)
 
+for (lvl in levels (chr11Overlap$stratum)) {
+  df_name <- paste0("anth.", lvl, "_up_num")
+  
+  sub_df <- chr11Overlap[chr11Overlap$stratum == lvl, ] |> 
+  filter(logFC.HvsCleaf>2) |> 
+  NROW()
+  
+  assign(df_name, sub_df)
+}
+
+for (lvl in levels (chr11Overlap$stratum)) {
+  df_name <- paste0("anth.", lvl, "_down_num")
+  
+  sub_df <- chr11Overlap[chr11Overlap$stratum == lvl, ] |> 
+  filter(logFC.HvsCanther< -2) |> 
+  NROW()
+  
+  assign(df_name, sub_df)
+}
 
 
-x.chr11 <- c(anth.out_up_num, anth.out_down_num, anth.hap_up_num, anth.hap_down_num, anth.hapEDG_up_num, anth.hapEDG_down_num, anth.inv11a_up_num, anth.inv11a_down_num, anth.inv11ab_up_num, anth.inv11ab_down_num, anth.inv11b_up_num, anth.inv11b_down_num) 
-n.chr11 <- c(out.total, out.total, hap.total, hap.total, hapEDG.total, hapEDG.total, inv11a.total, inv11a.total, inv11ab.total, inv11ab.total, inv11b.total, inv11b.total)
+
+x.chr11.loopmethod <- c(anth.out_up_num, anth.out_down_num, anth.hap_up_num, anth.hap_down_num, anth.hapEDG_up_num, anth.hapEDG_down_num, anth.inv11a_up_num, anth.inv11a_down_num, anth.inv11ab_up_num, anth.inv11ab_down_num, anth.inv11b_up_num, anth.inv11b_down_num) 
+n.chr11.loopmethod <- c(out.total, out.total, hap.total, hap.total, hapEDG.total, hapEDG.total, inv11a.total, inv11a.total, inv11ab.total, inv11ab.total, inv11b.total, inv11b.total)
 
 
 pairwise.prop.test(x.chr11, n.chr11)
@@ -732,10 +1006,10 @@ chr11.df.all <- data.frame(
   up_down = chr11.up_down,
   values = chr11.values
 )
-
+anther.pairwise.colors <- c("#fdb125","#fde725")
 ggplot(chr11.df.all, aes(x = stratum, y = values, fill = up_down)) +
   geom_col(position = "dodge", stat = "identity") +
-  scale_fill_viridis_d() +
+  scale_fill_manual(values = anther.pairwise.colors)+
   labs(
     title = "All differentially expressed genes in CHR 11",
     x = "Chromsome 11 Stratum",
@@ -850,9 +1124,7 @@ if (require(mimgut.annotations.TxDb)) {
 
 
 ```
-```{r}
 
-```
 
 
 ```{r}
@@ -876,6 +1148,7 @@ allDEGs.mapping <- allDEGs.mapping |>
 
 ## making list of all DEGs that also contains the athal orthologs for GO enrichment
 allDEGsAthalMimgut <- inner_join(athal_mimgut_orthologs, allDEGs.mapping, by = join_by(`Gene Name` == GENE))
+##Hi Ren, started orking on this, to me, the above inner_join is what we are looking for, and these two operations have different dimensions as the merge keeps the genes that do not have matcehs and fills them with an NA, you probably already know this, just wanted to write this to remind myself in the future
 
 allDEGsAthalMimgutTEST <- merge(allDEGs.mapping, athal_mimgut_orthologs, by.x = "GENE", by.y = "Gene Name", all.x = TRUE)
 
@@ -901,3 +1174,44 @@ go_results <- enrichGO(gene = as.vector(athalGO$ENTREZID),
 go_genes <- strsplit(go_results$geneID, "/")[[1]]
 print(go_genes)
 ```
+
+```{r}
+#Building on ren's code and using profiler/gost
+#https://biit.cs.ut.ee/gprofiler/gost
+
+#Closing up shop june 3, confused, defeated, %in% not workign for anythign but ovary, tried using intersect, they have different values? will continue working
+
+bud.majorlyexpressed <- bud.logfc |> 
+  filter(abs_logFC > 2)
+
+bud.precursor <- subset(allDEGsAthalMimgut$`Gene Name`, budTags$table$FDR < 0.05 & bud.logfc$abs_logFC>2)
+bud.gost <- allDEGsAthalMimgut |> 
+  filter(`Gene Name` %in% bud.precursor)
+bud.gost.test <- intersect(allDEGsAthalMimgut$`Gene Name`, bud.precursor)
+
+view(bud.gost)
+writeLines(bud.gost$`Ortholog Gene Name`, "budAthal.txt")
+
+leaf.precursor <- subset(allDEGsAthalMimgut$`Gene Name`, leafTags$table$FDR < 0.05 & leaf.logfc$abs_logFC>2)
+leaf.gost <-  allDEGsAthalMimgut |> 
+  filter(`Gene Name` %in% leaf.precursor)
+
+writeLines(leaf.gost$`Ortholog Gene Name`, "leafAthal.txt")
+
+anth.precursor <- subset(allDEGsAthalMimgut$`Gene Name`, leafTags$table$FDR < 0.05 & leaf.logfc$abs_logFC>2)
+anth.gost <- allDEGsAthalMimgut |> 
+  filter(`Gene Name` %in% anth.precursor)
+anth.gost.test <- intersect(allDEGsAthalMimgut$`Gene Name`, anth.precursor)
+writeLines(anth.gost$`Ortholog Gene Name`, "anthAthal.txt")
+
+ovary.precursor <- subset(allDEGsAthalMimgut$`Gene Name`, ovaryTags$table$FDR < 0.05 & ovary.logfc$abs_logFC>2)
+ovary.gost <- allDEGsAthalMimgut |> 
+  filter(`Gene Name` %in% ovary.precursor)
+ovary.gost.test <- intersect(allDEGsAthalMimgut$`Gene Name`, ovary.precursor)
+writeLines(ovary.gost$`Ortholog Gene Name`, "ovaryAthal.txt")
+
+
+```
+
+
+
