@@ -121,34 +121,40 @@ colnames(nmds_points) <- c("NMDS1", "NMDS2", "NMDS3")
 ```
 
 ```{r}
+#
 ## assuming you have a dataframe called 'metadata' with a column 'Group'
-nmds_points$SampleID <- rownames(nmds_points)
+#nmds_points$SampleID <- rownames(nmds_points)
 #nmds_points$Group <- Mimulus_Sample_Info$Group
 nmds_points$Group <- testDGE$samples$group
-
+nmds_points$Group <- as.factor(nmds_points$Group)
 #colors <- c("lightskyblue1", "lightskyblue2", "lightskyblue3","lightskyblue4", "goldenrod1","goldenrod2", "goldenrod3","goldenrod4")
-colors <- c("lightskyblue1","goldenrod1","lightskyblue2","goldenrod2","lightskyblue3","goldenrod3","lightskyblue4","goldenrod4")
+colors.nmds <- c("#fde725","#fde725","#375b8d","#375b8d","#440154","#440154","#239971","#239971")
 
 ##for some reason, this only works when this is stored as a new object, not as a modification to "colors"
-group_colors <- colors[as.numeric(as.factor(nmds_points$Group))]
+group_colors <- colors[as.numeric(nmds_points$Group)]
 color_play <- as.factor(nmds_points$Group)
 legend_guide <- levels(color_play)
+nmds.shapes <- c(1,19,1,19,1,19,1,19)
+nmds_point_shapes <- nmds.shapes[as.numeric(nmds_points$Group)]
 
-# create static 3D plot
+# create static 3D plot - need to run as a group 
+par(mar = c(5, 4, 4, 5), xpd = TRUE)
+
 sample.3d.plot <- scatterplot3d(x = nmds_points$NMDS1, 
               y = nmds_points$NMDS2, 
               z = nmds_points$NMDS3,
               color = group_colors,
-              pch = 19,
+              pch = nmds_point_shapes,
               xlab = "NMDS1",
               ylab = "NMDS2",
               zlab = "NMDS3",
-              main = "3D NMDS Plot")
-legend(x = 4, y = 7,
+              main = "3D NMDS Plot") 
+
+legend("topright",
        legend = legend_guide,
-       col = colors, 
+       col = colors,
+       inset = c(-0.10, -.12),
        pch = 16, 
-       inset = 0.05, 
        xpd = TRUE)
 ```
 
@@ -268,6 +274,7 @@ is.de.leaf_hvc <-  decideTests.DGEExact(et.leaf.hvc,p=0.05)
 is.de.anth_hvc <-  decideTests.DGEExact(et.anth.hvc,p=0.05)
 is.de.ovary_hvc <- decideTests.DGEExact(et.ovary.hvc,p=0.05)
 is.de.bud_hvc <- decideTests.DGEExact(et.bud.hvc,p=0.05)
+
 ```
 
 
@@ -494,11 +501,12 @@ leaf.figures <- subset(leafTags$table, leafTags$table$FDR < 0.05) |>
   
 overall.figures <- bind_rows(anth.figures,ovary.figures,bud.figures, leaf.figures)
 
+violin.color.order <- c("#FDE725", "#375B8D","#28AE80", "#440154")
 violin.overall.figures <- overall.figures |> 
   mutate(absLoGFC = abs(logFC))
 ggplot(violin.overall.figures, aes(factor(Tissue), absLoGFC), alpha(0.5)) +
   geom_violin(aes(fill = Tissue)) +
-  scale_fill_manual(values = euler.colorlist) +
+  scale_fill_manual(values = violin.color.order) +
   stat_summary(fun = "mean", geom = "crossbar", width = 0.5, color = "grey")+
   theme_bw()
   
@@ -508,6 +516,41 @@ ggplot(overall.figures, aes(factor(Tissue), logFC), alpha(0.5)) +
   scale_fill_manual(values = euler.colorlist) +
   stat_summary(fun = "mean", geom = "crossbar", width = 0.5, color = "grey")+
   theme_bw()
+```
+
+
+```{r}
+### Violin plots for logFC seperated by up and down logfc directionality
+
+
+
+anther.upregulated.violin <- fdr.bytissue.geneoverlap |> 
+  filter(Tissue=="Anther") |> 
+  filter(logFC>0) |> 
+  mutate("Direction" = "Up regulated")
+
+anther.downregulated.violin <- fdr.bytissue.geneoverlap |> 
+  filter(Tissue=="Anther") |> 
+  filter(logFC<0) |> 
+  mutate("Direction" = "Down regulated")
+
+anther.chr11.joined.violin <- bind_rows(anther.downregulated.violin,anther.upregulated.violin)
+anther.chr11.joined.violin$Direction <- as.factor(anther.chr11.joined.violin$Direction)
+
+dodge_center <- position_dodge(width = 0.9)
+
+ggplot(anther.chr11.joined.violin, aes(as.factor(stratum), logFC, fill = Direction), alpha(0.5)) +
+  geom_violin(aes(fill = Direction), ) +
+  scale_fill_manual(values = anther.pairwise.colors) +
+  stat_summary(fun = "mean", geom = "crossbar", width = 0.7, color = "black", position = dodge_center)+
+  theme_bw()+
+  labs(
+    title= "Directionality of Differential Expression by stratum",
+    x = "Stratum",
+    y = "LogFC"
+  )
+
+```
 ```
 
 
@@ -607,7 +650,7 @@ fdr.bytissue.geneoverlap$stratum <- as.factor(fdr.bytissue.geneoverlap$stratum)
 
 
 for (lvl in levels (fdr.bytissue.geneoverlap$stratum)) {
-  df_name <- paste0("anther.", lvl, "_up_num")
+  df_name <- paste0("anth.", lvl, "_up_num")
   
   sub_df <- fdr.bytissue.geneoverlap[fdr.bytissue.geneoverlap$stratum == lvl, ] |> 
   filter(logFC>2) |> 
@@ -618,7 +661,7 @@ for (lvl in levels (fdr.bytissue.geneoverlap$stratum)) {
 }
 
 for (lvl in levels (fdr.bytissue.geneoverlap$stratum)) {
-  df_name <- paste0("anther.", lvl, "_up_num")
+  df_name <- paste0("anth.", lvl, "_down_num")
   
   sub_df <- fdr.bytissue.geneoverlap[fdr.bytissue.geneoverlap$stratum == lvl, ] |> 
   filter(logFC< -2) |> 
@@ -659,6 +702,8 @@ ggplot(chr11.df, aes(x = stratum, y = values, fill = up_down)) +
   theme_minimal()
 
 ```
+
+
 
 ```{r} 
 #majorly expressed genes on chr 11: bud
